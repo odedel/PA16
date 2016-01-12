@@ -1,7 +1,53 @@
-__author__ = 'Odedz'
+import ast
+import astor
+import graphviz
+
+graph_nodes = []
+graph_edges = []
+
+class GraphNode(object):
+    def __init__(self, statement, assigned_var, influence_vars=[]):
+        self.statement = statement
+        self.assigned_var = assigned_var
+        self.influence_vars = influence_vars
+
+    def __repr__(self):
+        return '(%s, %s, %s)' % (self.statement, self.assigned_var, self.influence_vars)
+
+
+
+class ASTWalker(ast.NodeVisitor):
+
+    def visit_Assign(self, node):
+        target = node.targets[0].id
+        code = astor.codegen.to_source(node)
+
+        influence_vars = []
+        if isinstance(node.value, ast.BinOp):
+            for inner_disassembly in [node.value.right, node.value.left]:
+                if isinstance(inner_disassembly, ast.Name):
+                    influence_vars.append(inner_disassembly.id)
+        elif isinstance(node.value, ast.Name):
+            influence_vars.append(node.value.id)
+
+        graph_nodes.append(GraphNode(code, target, influence_vars))
+
 
 def create_graph(original_code):
-    pass
+    ast_tree = ast.parse(original_code)
+    ASTWalker().visit(ast_tree)
+
+    seen_variables_to_line_code = {}
+    for enumeration, node in enumerate(graph_nodes):
+        # Create edges
+        for dependency in node.influence_vars:
+            graph_edges.append((seen_variables_to_line_code[dependency], enumeration))
+
+        # Update the seen list
+        seen_variables_to_line_code[node.assigned_var] = enumeration
+
+    print graph_edges
+
 
 
 def create_projected_variable_path(program_graph, projected_variable):
@@ -28,3 +74,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print graph_nodes
