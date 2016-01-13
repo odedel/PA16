@@ -68,7 +68,7 @@ def create_projected_variable_path(program_graph, projected_variable):
                 required = required.union(mappy[pos])
     required = list(required)
     print required
-    return required
+    return sorted(required)
 
 
 def build_program(projected_path):
