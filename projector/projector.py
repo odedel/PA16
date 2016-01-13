@@ -46,7 +46,7 @@ def create_graph(original_code):
         # Update the seen list
         seen_variables_to_line_code[node.assigned_var] = enumeration
 
-    print graph_edges
+
     return graph_edges
 
 
@@ -58,7 +58,7 @@ def create_projected_variable_path(program_graph, projected_variable):
         if y not in mappy:
             mappy[y] = []
         mappy[y].append(x)
-    print mappy
+
     for i in xrange(len(graph_nodes)):
         pos = len(graph_nodes) - i - 1
         g = graph_nodes[pos]
@@ -67,7 +67,7 @@ def create_projected_variable_path(program_graph, projected_variable):
             if pos in mappy:
                 required = required.union(mappy[pos])
     required = list(required)
-    print required
+
     return sorted(required)
 
 
