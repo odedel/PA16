@@ -8,3 +8,7 @@ w = y
 y = 2
 k = x + y
 x = 1
+a=1
+b=a
+c=b
+d=c*b
