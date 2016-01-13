@@ -47,6 +47,7 @@ def create_graph(original_code):
         seen_variables_to_line_code[node.assigned_var] = enumeration
 
     print graph_edges
+    return graph_edges
 
 
 
