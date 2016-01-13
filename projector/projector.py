@@ -78,9 +78,19 @@ def build_program(projected_path):
     return program
 
 
-def project(original_code, projected_variable):
+def project_l(original_code, projected_variable):
+    global graph_nodes
+    global graph_edges
+
+    graph_edges = []
+    graph_nodes = []
     program_graph = create_graph(original_code)
     projected_path = create_projected_variable_path(program_graph, projected_variable)
+    return projected_path
+
+
+def project(original_code, projected_variable):
+    projected_path = project_l(original_code, projected_variable)
     return build_program(projected_path)
 
 
@@ -88,7 +98,7 @@ def main():
     with file(r'..\Tests\test1.py') as f:
         original_code = f.read()
 
-    projected_code = project(original_code, 'z')
+    projected_code = project(original_code, 'd')
 
     for i in projected_code:
         print i
