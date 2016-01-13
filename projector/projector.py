@@ -91,7 +91,8 @@ def main():
 
     projected_code = project(original_code, 'z')
 
-    print projected_code
+    for i in projected_code:
+        print i
 
 if __name__ == '__main__':
     main()
