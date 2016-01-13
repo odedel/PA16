@@ -52,7 +52,6 @@ def create_graph(original_code):
 
 
 def create_projected_variable_path(program_graph, projected_variable):
-    global graph_nodes
     mappy = {}
     required = set()
     for x,y in program_graph:
