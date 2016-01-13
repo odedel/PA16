@@ -1,17 +1,9 @@
 import sys
 sys.path.insert(0, '../projector')
-
+import pytest
 from projector.projector import project_l
 
-
-def check_var(code, var, expected_lines):
-    projection = project_l("\n".join(code), var)
-    assert len(projection) == len(expected_lines), "Expected %s but got %s" % (expected_lines, projection)
-    assert len(set(projection).intersection(expected_lines)) == len(expected_lines), "Expected %s but got %s" % (expected_lines, projection)
-
-
-def test_projection():
-    code = [
+code_1 = [
         "x = 5",
         "y = 6",
         "z = x + 3",
@@ -24,13 +16,22 @@ def test_projection():
         "c=b",
         "d=c*b",
     ]
-    check_var(code, "x", [0, 6])
-    check_var(code, "y", [1, 4])
-    check_var(code, "z", [0, 2])
-    check_var(code, "w", [1, 3])
-    check_var(code, "k", [0, 4, 5])
-    check_var(code, "a", [7])
-    check_var(code, "b", [7, 8])
-    check_var(code, "c", [7, 8, 9])
-    check_var(code, "d", [7, 8, 9, 10])
+
+
+@pytest.mark.parametrize("code, var, expected_lines", [
+    (code_1, "x", [0, 6]),
+    (code_1, "y", [1, 4]),
+    (code_1, "z", [0, 2]),
+    (code_1, "w", [1, 3]),
+    (code_1, "k", [0, 4, 5]),
+    (code_1, "a", [7]),
+    (code_1, "b", [7, 8]),
+    (code_1, "c", [7, 8, 9]),
+    (code_1, "d", [7, 8, 9, 10]),
+])
+def test_var(code, var, expected_lines):
+    projection = project_l("\n".join(code), var)
+    assert len(projection) == len(expected_lines), "Expected %s but got %s" % (expected_lines, projection)
+    assert len(set(projection).intersection(expected_lines)) == len(expected_lines), "Expected %s but got %s" % (expected_lines, projection)
+
 
