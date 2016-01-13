@@ -52,7 +52,23 @@ def create_graph(original_code):
 
 
 def create_projected_variable_path(program_graph, projected_variable):
-    pass
+    global graph_nodes
+    mappy = {}
+    required = set()
+    for x,y in program_graph:
+        if y not in mappy:
+            mappy[y] = []
+        mappy[y].append(x)
+    print mappy
+    for i in xrange(len(graph_nodes)):
+        pos = len(graph_nodes) - i - 1
+        g = graph_nodes[pos]
+        if g.assigned_var is projected_variable or pos in required:
+            required.add(pos)
+            if pos in mappy:
+                required = required.union(mappy[pos])
+    required = list(required)
+    print required
 
 
 def build_program(projected_path):
