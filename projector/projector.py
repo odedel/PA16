@@ -73,7 +73,10 @@ def create_projected_variable_path(program_graph, projected_variable):
 
 
 def build_program(projected_path):
-    pass
+    program = []
+    for i in projected_path:
+        program.append(graph_nodes[i].statement)
+    return program
 
 
 def project(original_code, projected_variable):
