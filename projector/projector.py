@@ -94,8 +94,13 @@ def main():
     for i in projected_code:
         print i
 
-if __name__ == '__main__':
-    main()
+
+def print_graph_nodes():
     print "%s\t%s%s" % ("assigned".ljust(10), "influenced by".ljust(20), "statement")
     for g in graph_nodes:
         print "%s\t%s%s" % (str(g.assigned_var).ljust(10), str(g.influence_vars).ljust(20), g.statement)
+
+
+if __name__ == '__main__':
+    main()
+    print_graph_nodes()
