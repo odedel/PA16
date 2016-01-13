@@ -17,21 +17,23 @@ code_1 = [
         "d=c*b",
     ]
 
+parameters = [
+    ("x", [0, 6]),
+    ("y", [1, 4]),
+    ("z", [0, 2]),
+    ("w", [1, 3]),
+    ("k", [0, 4, 5]),
+    ("a", [7]),
+    ("b", [7, 8]),
+    ("c", [7, 8, 9]),
+    ("d", [7, 8, 9, 10]),
+]
 
-@pytest.mark.parametrize("code, var, expected_lines", [
-    (code_1, "x", [0, 6]),
-    (code_1, "y", [1, 4]),
-    (code_1, "z", [0, 2]),
-    (code_1, "w", [1, 3]),
-    (code_1, "k", [0, 4, 5]),
-    (code_1, "a", [7]),
-    (code_1, "b", [7, 8]),
-    (code_1, "c", [7, 8, 9]),
-    (code_1, "d", [7, 8, 9, 10]),
-])
-def test_var(code, var, expected_lines):
-    projection = project_l("\n".join(code), var)
-    assert len(projection) == len(expected_lines), "Expected %s but got %s" % (expected_lines, projection)
-    assert len(set(projection).intersection(expected_lines)) == len(expected_lines), "Expected %s but got %s" % (expected_lines, projection)
+
+@pytest.mark.parametrize("var, expected", parameters)
+def test_var(var, expected):
+    projection = project_l("\n".join(code_1), var)
+    assert len(projection) == len(expected), "Expected %s but got %s" % (expected, projection)
+    assert len(set(projection).intersection(expected)) == len(expected), "Expected %s but got %s" % (expected, projection)
 
 
