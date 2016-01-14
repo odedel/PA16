@@ -51,8 +51,7 @@ def create_graph(original_code):
         # Update the seen list
         seen_variables_to_line_code[node.assigned_var] = enumeration
 
-    ProgramGraph = namedtuple('ProgramGraph', ['nodes', 'edges'])
-    return ProgramGraph(walker.graph_nodes, graph_edges)
+    return namedtuple('ProgramGraph', ['nodes', 'edges'])(walker.graph_nodes, graph_edges)
 
 
 
