@@ -1,8 +1,11 @@
+import os
 import ast
 import astor
 import graphviz
 
 from collections import namedtuple
+
+GraphEdge = namedtuple('GraphEdge', ['from_', 'to', 'CorD'])  # Control or Dependency
 
 
 class GraphNode(object):
@@ -23,7 +26,7 @@ class AssignNode(GraphNode):
 
 
 class ControlNode(GraphNode):
-    def __init__(self, statement, checked_vars=[]):
+    def __init__(self, statement, checked_vars):
         self.statement = statement
         self.checked_vars = checked_vars
 
@@ -31,13 +34,14 @@ class ControlNode(GraphNode):
         return "%s\t\t%s" % (str(self.checked_vars).ljust(20), self.statement)
 
 
-class ASTWalker(ast.NodeVisitor):
-    def __init__(self, graph_nodes=[], graph_edges=[], code_line=0, last_seen={}):
-        self.graph_nodes = graph_nodes
-        self.graph_edges = graph_edges
-        self.code_line = code_line
-        self.last_seen = last_seen
-        super(ASTWalker, self).__init__()
+class GraphBuilder(ast.NodeVisitor):
+    def __init__(self):
+        self.nodes = []
+        self.edges = []
+        self.last_seen = {}
+        self.first_seen = {}
+        self._code_line = 0
+        super(GraphBuilder, self).__init__()
 
     def visit_Assign(self, node):
         target = node.targets[0].id
@@ -51,16 +55,60 @@ class ASTWalker(ast.NodeVisitor):
         elif isinstance(node.value, ast.Name):
             influence_vars.append(node.value.id)
 
-        self.graph_nodes.append(AssignNode(code, target, influence_vars))
+        self.nodes.append(AssignNode(code, target, influence_vars))
 
         # Create dependency edge
         for dependency in influence_vars:
-            self.graph_edges.append((self.last_seen[dependency], self.code_line))
+            self.edges.append(GraphEdge(self.last_seen[dependency], self._code_line, 'D'))
 
         # Update the seen list
-        self.last_seen[target] = self.code_line
+        self.last_seen[target] = self._code_line
 
-        self.code_line += 1
+        # Update first seen
+        if target not in self.first_seen:
+            self.first_seen[target] = self._code_line
+
+        self._code_line += 1
+
+    def visit_If(self, node):
+        starting_if_code_line = self._code_line
+
+        # The test
+        code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
+        checked_vars = []
+        for tested in [node.test.left, node.test.comparators[0]]:
+            if isinstance(tested, ast.Name):
+                checked_vars.append(tested.id)
+        self.nodes.append(ControlNode(code, checked_vars))
+
+        # Then part
+        self._build_and_merge_inner_graph(node.body)
+
+        if not node.orelse:
+            self.edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
+        else:
+            self._code_line += 1
+            self.edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
+            self._build_and_merge_inner_graph(node.orelse)
+
+    def _build_and_merge_inner_graph(self, body):
+        code = ''
+        for statement in body:
+            code += astor.codegen.to_source(statement) + os.linesep
+        inner_graph = create_graph(code)
+
+        # Merge graph and inner_graph
+        self.nodes.extend(inner_graph.nodes)
+
+        for first_seen_code_line in inner_graph.first_seen.values():
+            self.edges.append(GraphEdge(self._code_line, first_seen_code_line + 1 + self._code_line, 'C'))
+
+        self._code_line += 1
+        for edge in inner_graph.edges:
+            self.edges.append(GraphEdge(edge.from_ + self._code_line, edge.to + self._code_line, edge.CorD))
+        self._code_line += len(body)
+
+
 
 
 def print_graph_nodes(nodes):
@@ -70,19 +118,19 @@ def print_graph_nodes(nodes):
 
 
 def create_graph(original_code):
-    walker = ASTWalker()
-    walker.visit(ast.parse(original_code))
+    builder = GraphBuilder()
+    builder.visit(ast.parse(original_code))
 
-    print_graph_nodes(walker.graph_nodes)
+    print_graph_nodes(builder.nodes)
+    print os.linesep, 'Edges: ', builder.edges, os.linesep
 
-    ProgramGraph = namedtuple('ProgramGraph', ['nodes', 'edges'])
-    return ProgramGraph(walker.graph_nodes, walker.graph_edges)
+    return builder
 
 
 def create_projected_variable_path(program_graph, projected_variable):
     mappy = {}
     required = set()
-    for x, y in program_graph.edges:
+    for x, y, d in program_graph.edges:
         if y not in mappy:
             mappy[y] = []
         mappy[y].append(x)
@@ -90,7 +138,7 @@ def create_projected_variable_path(program_graph, projected_variable):
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
         g = program_graph.nodes[pos]
-        if g.assigned_var is projected_variable or pos in required:
+        if (isinstance(g, AssignNode) and g.assigned_var is projected_variable) or pos in required:
             required.add(pos)
             if pos in mappy:
                 required = required.union(mappy[pos])
@@ -113,11 +161,12 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'..\Tests\test1.py') as f:
+    with file(r'..\Tests\test3.py') as f:
         original_code = f.read()
 
-    projected_code = project(original_code, 'd')
+    projected_code = project(original_code, 'z')
 
+    print 'The projected program:'
     for i in projected_code:
         print i
 
