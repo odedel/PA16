@@ -6,6 +6,10 @@ from collections import namedtuple
 
 
 class GraphNode(object):
+    pass
+
+
+class AssignNode(GraphNode):
     def __init__(self, statement, assigned_var, influence_vars=[]):
         self.statement = statement
         self.assigned_var = assigned_var
@@ -14,12 +18,25 @@ class GraphNode(object):
     def __repr__(self):
         return '(%s, %s, %s)' % (self.statement, self.assigned_var, self.influence_vars)
 
+    def __str__(self):
+        return "%s\t%s%s" % (self.assigned_var.ljust(10), str(self.influence_vars).ljust(20), self.statement)
+
+
+class ControlNode(GraphNode):
+    def __init__(self, statement, checked_vars=[]):
+        self.statement = statement
+        self.checked_vars = checked_vars
+
+    def __str__(self):
+        return "%s\t\t%s" % (str(self.checked_vars).ljust(20), self.statement)
 
 
 class ASTWalker(ast.NodeVisitor):
-
-    def __init__(self, graph_nodes=[]):
+    def __init__(self, graph_nodes=[], graph_edges=[], code_line=0, last_seen={}):
         self.graph_nodes = graph_nodes
+        self.graph_edges = graph_edges
+        self.code_line = code_line
+        self.last_seen = last_seen
         super(ASTWalker, self).__init__()
 
     def visit_Assign(self, node):
@@ -34,33 +51,32 @@ class ASTWalker(ast.NodeVisitor):
         elif isinstance(node.value, ast.Name):
             influence_vars.append(node.value.id)
 
-        self.graph_nodes.append(GraphNode(code, target, influence_vars))
+        self.graph_nodes.append(AssignNode(code, target, influence_vars))
 
-
-def create_graph_nodes(original_code):
-    walker = ASTWalker()
-    walker.visit(ast.parse(original_code))
-    return walker.graph_nodes
-
-def create_graph_edges(nodes):
-    seen_variables_to_line_code = {}
-    graph_edges = []
-    for enumeration, node in enumerate(nodes):
-        # Create edges
-        for dependency in node.influence_vars:
-            graph_edges.append((seen_variables_to_line_code[dependency], enumeration))
+        # Create dependency edge
+        for dependency in influence_vars:
+            self.graph_edges.append((self.last_seen[dependency], self.code_line))
 
         # Update the seen list
-        seen_variables_to_line_code[node.assigned_var] = enumeration
-    return graph_edges
+        self.last_seen[target] = self.code_line
+
+        self.code_line += 1
+
+
+def print_graph_nodes(nodes):
+    print "%s\t%s%s" % ("influenced".ljust(10), "influenced by".ljust(20), "statement")
+    for g in nodes:
+        print g
 
 
 def create_graph(original_code):
-    nodes = create_graph_nodes(original_code)
-    edges = create_graph_edges(nodes)
+    walker = ASTWalker()
+    walker.visit(ast.parse(original_code))
+
+    print_graph_nodes(walker.graph_nodes)
 
     ProgramGraph = namedtuple('ProgramGraph', ['nodes', 'edges'])
-    return ProgramGraph(nodes, edges)
+    return ProgramGraph(walker.graph_nodes, walker.graph_edges)
 
 
 def create_projected_variable_path(program_graph, projected_variable):
@@ -106,12 +122,5 @@ def main():
         print i
 
 
-# def print_graph_nodes():
-#     print "%s\t%s%s" % ("assigned".ljust(10), "influenced by".ljust(20), "statement")
-#     for g in graph_nodes:
-#         print "%s\t%s%s" % (str(g.assigned_var).ljust(10), str(g.influence_vars).ljust(20), g.statement)
-
-
 if __name__ == '__main__':
     main()
-    # print_graph_nodes()
