@@ -78,19 +78,9 @@ def build_program(projected_path):
     return program
 
 
-def project_l(original_code, projected_variable):
-    global graph_nodes
-    global graph_edges
-
-    graph_edges = []
-    graph_nodes = []
+def project(original_code, projected_variable):
     program_graph = create_graph(original_code)
     projected_path = create_projected_variable_path(program_graph, projected_variable)
-    return projected_path
-
-
-def project(original_code, projected_variable):
-    projected_path = project_l(original_code, projected_variable)
     return build_program(projected_path)
 
 
