@@ -15,7 +15,6 @@ class GraphNode(object):
         return '(%s, %s, %s)' % (self.statement, self.assigned_var, self.influence_vars)
 
 
-
 class ASTWalker(ast.NodeVisitor):
 
     def __init__(self, graph_nodes=[]):
@@ -54,6 +53,12 @@ def create_graph(original_code):
     return namedtuple('ProgramGraph', ['nodes', 'edges'])(walker.graph_nodes, graph_edges)
 
 
+def build_program(program_graph, projected_path):
+    program = []
+    for i in projected_path:
+        program.append(program_graph.nodes[i].statement)
+    return program
+
 
 def create_projected_variable_path(program_graph, projected_variable):
     mappy = {}
@@ -72,20 +77,12 @@ def create_projected_variable_path(program_graph, projected_variable):
                 required = required.union(mappy[pos])
     required = list(required)
 
-    return sorted(required)
-
-
-def build_program(program_graph, projected_path):
-    program = []
-    for i in projected_path:
-        program.append(program_graph.nodes[i].statement)
-    return program
+    return build_program(program_graph, sorted(required))
 
 
 def project(original_code, projected_variable):
     program_graph = create_graph(original_code)
-    projected_path = create_projected_variable_path(program_graph, projected_variable)
-    return build_program(program_graph, projected_path)
+    return create_projected_variable_path(program_graph, projected_variable)
 
 
 def main():
