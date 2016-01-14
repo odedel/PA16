@@ -37,22 +37,30 @@ class ASTWalker(ast.NodeVisitor):
         self.graph_nodes.append(GraphNode(code, target, influence_vars))
 
 
-def create_graph(original_code):
+def create_graph_nodes(original_code):
     walker = ASTWalker()
     walker.visit(ast.parse(original_code))
+    return walker.graph_nodes
 
+def create_graph_edges(nodes):
     seen_variables_to_line_code = {}
     graph_edges = []
-    for enumeration, node in enumerate(walker.graph_nodes):
+    for enumeration, node in enumerate(nodes):
         # Create edges
         for dependency in node.influence_vars:
             graph_edges.append((seen_variables_to_line_code[dependency], enumeration))
 
         # Update the seen list
         seen_variables_to_line_code[node.assigned_var] = enumeration
+    return graph_edges
 
-    return namedtuple('ProgramGraph', ['nodes', 'edges'])(walker.graph_nodes, graph_edges)
 
+def create_graph(original_code):
+    nodes = create_graph_nodes(original_code)
+    edges = create_graph_edges(nodes)
+
+    ProgramGraph = namedtuple('ProgramGraph', ['nodes', 'edges'])
+    return ProgramGraph(nodes, edges)
 
 
 def create_projected_variable_path(program_graph, projected_variable):
