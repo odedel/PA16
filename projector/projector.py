@@ -86,18 +86,20 @@ class GraphBuilder(ast.NodeVisitor):
         self.nodes.append(ControlNode(code, checked_vars))
 
         # Then part
-        self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line+1, 'C'))
+        self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
         self._build_and_merge_inner_graph(node.body)
-        self.control_edges.append(GraphEdge(self._code_line, self._code_line+len(node.orelse), 'C'))
 
         if not node.orelse:
-            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
+            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(GraphEdge(self._code_line, self._code_line + 1, 'C'))
         else:
+            self.control_edges.append(GraphEdge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
             self._code_line += 1
-            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
+            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
             self._build_and_merge_inner_graph(node.orelse)
             self.control_edges.append(GraphEdge(self._code_line, self._code_line+1, 'C'))
 
+        self._code_line += 1
 
     def _build_and_merge_inner_graph(self, body):
         code = ''
@@ -111,12 +113,11 @@ class GraphBuilder(ast.NodeVisitor):
         # Delete last control edge
         inner_graph.control_edges = inner_graph.control_edges[:-1]
 
-        self._code_line += 1
         for edge in inner_graph.control_edges:
-            self.control_edges.append(GraphEdge(edge.from_ + self._code_line, edge.to + self._code_line, 'C'))
+            self.control_edges.append(GraphEdge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, 'C'))
         for edge in inner_graph.dep_edges:
-            self.dep_edges.append(GraphEdge(edge.from_ + self._code_line, edge.to + self._code_line, 'D'))
-        self._code_line += len(body) - 1 
+            self.dep_edges.append(GraphEdge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, 'D'))
+        self._code_line += len(body)
 
 
 def print_graph_nodes(nodes):
