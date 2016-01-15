@@ -46,9 +46,7 @@ class GraphBuilder(ast.NodeVisitor):
     def visit_Assign(self, node):
         self._create_assign_node_dependencies(node)
         self.control_edges.append(Edge(self._code_line, self._code_line+1))
-
         self.last_seen[node.targets[0].id] = [self._code_line]
-
         self._code_line += 1
 
     def visit_If(self, node):
@@ -134,8 +132,8 @@ class GraphBuilder(ast.NodeVisitor):
         self.nodes.extend(inner_graph.nodes)
         inner_graph.control_edges = inner_graph.control_edges[:-1]
 
-        self._merge_edges(inner_graph.control_edges)
-        self._merge_edges(inner_graph.dep_edges)
+        self._merge_edges(self.control_edges, inner_graph.control_edges)
+        self._merge_edges(self.dep_edges, inner_graph.dep_edges)
         self._fix_inner_code_lines(inner_graph.last_seen)
         self._find_unknown_variables(inner_graph.unknown_vars)
 
@@ -158,9 +156,9 @@ class GraphBuilder(ast.NodeVisitor):
                 fixed_code_lines.append(code_line + self._code_line + 1)
             inner_dict[var] = fixed_code_lines
 
-    def _merge_edges(self, inner_edges):
+    def _merge_edges(self, outer_edges, inner_edges):
         for edge in inner_edges:
-            self.control_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1))
+            outer_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1))
 
 
 def print_graph_nodes(nodes):
