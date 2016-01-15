@@ -131,40 +131,36 @@ class GraphBuilder(ast.NodeVisitor):
             code += astor.codegen.to_source(statement) + os.linesep
         inner_graph = create_graph(code)
 
-        # Merge graph and inner_graph
         self.nodes.extend(inner_graph.nodes)
-
-        # Delete last control edge
         inner_graph.control_edges = inner_graph.control_edges[:-1]
 
-        for edge in inner_graph.control_edges:
-            self.control_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1))
-        for edge in inner_graph.dep_edges:
-            self.dep_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1))
-
-        # Update unknown
-        for var in inner_graph.unknown_vars:
-            fixed_code_lines = []
-            for code_line in inner_graph.unknown_vars[var]:
-                fixed_code_lines.append(code_line + self._code_line + 1)
-            inner_graph.unknown_vars[var] = fixed_code_lines
-
-        # Update last seen
-        for var in inner_graph.last_seen:
-            fixed_code_lines = []
-            for code_line in inner_graph.last_seen[var]:
-                fixed_code_lines.append(code_line + self._code_line + 1)
-            inner_graph.last_seen[var] = fixed_code_lines
+        self._merge_edges(inner_graph.control_edges)
+        self._merge_edges(inner_graph.dep_edges)
+        self._fix_inner_code_lines(inner_graph.last_seen)
+        self._find_unknown_variables(inner_graph.unknown_vars)
 
         self._code_line += len(body)
 
-        # Create dep edges from inner to outer
-        for var, inner_code_lines in inner_graph.unknown_vars.iteritems():
+        return inner_graph.last_seen
+
+    def _find_unknown_variables(self, unknown_vars):
+        self._fix_inner_code_lines(unknown_vars)
+
+        for var, inner_code_lines in unknown_vars.iteritems():
             for inner_code_line in inner_code_lines:
                 for outer_code_line in self.last_seen[var]:
                     self.dep_edges.append(Edge(outer_code_line, inner_code_line))
 
-        return inner_graph.last_seen
+    def _fix_inner_code_lines(self, inner_dict):
+        for var in inner_dict:
+            fixed_code_lines = []
+            for code_line in inner_dict[var]:
+                fixed_code_lines.append(code_line + self._code_line + 1)
+            inner_dict[var] = fixed_code_lines
+
+    def _merge_edges(self, inner_edges):
+        for edge in inner_edges:
+            self.control_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1))
 
 
 def print_graph_nodes(nodes):
