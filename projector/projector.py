@@ -52,29 +52,16 @@ class GraphBuilder(ast.NodeVisitor):
         self._code_line += 1
 
     def visit_If(self, node):
-        starting_if_code_line = self._code_line
+        block_starting_line = self._code_line
 
-        # The test
-        code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
-        checked_vars = []
-        for tested in [node.test.left, node.test.comparators[0]]:
-            if isinstance(tested, ast.Name):
-                checked_vars.append(tested.id)
-                self._create_dep_edge(tested.id, self._code_line)
-        self.nodes.append(ControlNode(code, checked_vars))
+        self._create_condition_dependencies(node)
 
         # Then part
-        self.control_edges.append(Edge(starting_if_code_line, self._code_line + 1, 'C'))
-        last_seen_then_part, unknown_then_part = self._build_and_merge_inner_graph(node.body)
-
-        # Create dep edges from inner to outer
-        for var in unknown_then_part:
-            for inner_code_line in unknown_then_part[var]:
-                for outer_code_line in self.last_seen[var]:
-                    self.dep_edges.append(Edge(outer_code_line, inner_code_line, 'D'))
+        self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+        last_seen_then_part = self._build_and_merge_inner_graph(node.body)
 
         if not node.orelse:
-            self.control_edges.append(Edge(starting_if_code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(block_starting_line, self._code_line + 1, 'C'))
             self.control_edges.append(Edge(self._code_line, self._code_line + 1, 'C'))
 
             # Update last seen
@@ -87,7 +74,7 @@ class GraphBuilder(ast.NodeVisitor):
         else:
             self.control_edges.append(Edge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
             self._code_line += 1
-            self.control_edges.append(Edge(starting_if_code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(block_starting_line, self._code_line + 1, 'C'))
             last_seen_else_part, unknown_else_part = self._build_and_merge_inner_graph(node.orelse)
             self.control_edges.append(Edge(self._code_line, self._code_line+1, 'C'))
 
@@ -144,6 +131,15 @@ class GraphBuilder(ast.NodeVisitor):
                 else:
                     self.unknown_vars[dependency] = [self._code_line]
 
+    def _create_condition_dependencies(self, node):
+        code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
+        checked_vars = []
+        for tested in [node.test.left, node.test.comparators[0]]:
+            if isinstance(tested, ast.Name):
+                checked_vars.append(tested.id)
+                self._create_dep_edge(tested.id, self._code_line)
+        self.nodes.append(ControlNode(code, checked_vars))
+
     def _build_and_merge_inner_graph(self, body):
         code = ''
         for statement in body:
@@ -177,7 +173,13 @@ class GraphBuilder(ast.NodeVisitor):
 
         self._code_line += len(body)
 
-        return inner_graph.last_seen, inner_graph.unknown_vars
+        # Create dep edges from inner to outer
+        for var, inner_code_lines in inner_graph.unknown_vars.iteritems():
+            for inner_code_line in inner_code_lines:
+                for outer_code_line in self.last_seen[var]:
+                    self.dep_edges.append(Edge(outer_code_line, inner_code_line))
+
+        return inner_graph.last_seen,
 
 
 def print_graph_nodes(nodes):
