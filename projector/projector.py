@@ -4,14 +4,14 @@ import astor
 
 from collections import namedtuple
 
-GraphEdge = namedtuple('GraphEdge', ['from_', 'to', 'CorD'])  # Control or Dependency
+Edge = namedtuple('GraphEdge', ['from_', 'to'])
 
 
-class GraphNode(object):
+class Node(object):
     pass
 
 
-class AssignNode(GraphNode):
+class AssignNode(Node):
     def __init__(self, statement, assigned_var, influence_vars=[]):
         self.statement = statement
         self.assigned_var = assigned_var
@@ -24,7 +24,7 @@ class AssignNode(GraphNode):
         return "%s\t%s%s" % (self.assigned_var.ljust(10), str(self.influence_vars).ljust(20), self.statement)
 
 
-class ControlNode(GraphNode):
+class ControlNode(Node):
     def __init__(self, statement, checked_vars):
         self.statement = statement
         self.checked_vars = checked_vars
