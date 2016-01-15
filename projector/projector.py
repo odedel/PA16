@@ -91,15 +91,15 @@ class GraphBuilder(ast.NodeVisitor):
         self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
         last_seen_then_part, unknown_then_part = self._build_and_merge_inner_graph(node.body)
 
+        # Create dep edges from inner to outer
+        for var in unknown_then_part:
+            for inner_code_line in unknown_then_part[var]:
+                for outer_code_line in self.last_seen[var]:
+                    self.dep_edges.append(GraphEdge(outer_code_line, inner_code_line, 'D'))
+
         if not node.orelse:
             self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
             self.control_edges.append(GraphEdge(self._code_line, self._code_line + 1, 'C'))
-
-            # Create dep edges from inner to outer
-            for var in unknown_then_part:
-                for inner_code_line in unknown_then_part[var]:
-                    for outer_code_line in self.last_seen[var]:
-                        self.dep_edges.append(GraphEdge(outer_code_line, inner_code_line, 'D'))
 
             # Update last seen
             for var, code_lines in last_seen_then_part.iteritems():
@@ -112,8 +112,14 @@ class GraphBuilder(ast.NodeVisitor):
             self.control_edges.append(GraphEdge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
             self._code_line += 1
             self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
-            last_seen_else_part = self._build_and_merge_inner_graph(node.orelse)
+            last_seen_else_part, unknown_else_part = self._build_and_merge_inner_graph(node.orelse)
             self.control_edges.append(GraphEdge(self._code_line, self._code_line+1, 'C'))
+
+            # Create dep edges from inner to outer
+            for var in unknown_else_part:
+                for inner_code_line in unknown_else_part[var]:
+                    for outer_code_line in self.last_seen[var]:
+                        self.dep_edges.append(GraphEdge(outer_code_line, inner_code_line, 'D'))
 
             # Update last seen
             for var in last_seen_then_part:
@@ -223,7 +229,7 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'..\Tests\test3.py') as f:
+    with file(r'..\Tests\test4.py') as f:
         original_code = f.read()
 
     projected_code = project(original_code, 'z')
