@@ -61,8 +61,8 @@ class GraphBuilder(ast.NodeVisitor):
         last_seen_then_part = self._build_and_merge_inner_graph(node.body)
 
         if not node.orelse:
-            self.control_edges.append(Edge(block_starting_line, self._code_line + 1, 'C'))
-            self.control_edges.append(Edge(self._code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+            self.control_edges.append(Edge(self._code_line, self._code_line + 1))
 
             # Update last seen
             for var, code_lines in last_seen_then_part.iteritems():
@@ -72,17 +72,17 @@ class GraphBuilder(ast.NodeVisitor):
                     else:
                         self.last_seen[var] = [code_line]
         else:
-            self.control_edges.append(Edge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
+            self.control_edges.append(Edge(self._code_line, self._code_line + len(node.orelse) + 2))  # Create edge from 'then' skipping the 'else'
             self._code_line += 1
-            self.control_edges.append(Edge(block_starting_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
             last_seen_else_part, unknown_else_part = self._build_and_merge_inner_graph(node.orelse)
-            self.control_edges.append(Edge(self._code_line, self._code_line+1, 'C'))
+            self.control_edges.append(Edge(self._code_line, self._code_line+1))
 
             # Create dep edges from inner to outer
             for var in unknown_else_part:
                 for inner_code_line in unknown_else_part[var]:
                     for outer_code_line in self.last_seen[var]:
-                        self.dep_edges.append(Edge(outer_code_line, inner_code_line, 'D'))
+                        self.dep_edges.append(Edge(outer_code_line, inner_code_line))
 
             # Update last seen
             for var in last_seen_then_part:
