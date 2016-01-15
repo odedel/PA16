@@ -44,34 +44,10 @@ class GraphBuilder(ast.NodeVisitor):
         super(GraphBuilder, self).__init__()
 
     def visit_Assign(self, node):
-        target = node.targets[0].id
-        code = astor.codegen.to_source(node)
+        self._create_assign_node_dependencies(node)
+        self.control_edges.append(Edge(self._code_line, self._code_line+1))
 
-        influence_vars = []
-        if isinstance(node.value, ast.BinOp):
-            for inner_disassembly in [node.value.right, node.value.left]:
-                if isinstance(inner_disassembly, ast.Name):
-                    influence_vars.append(inner_disassembly.id)
-        elif isinstance(node.value, ast.Name):
-            influence_vars.append(node.value.id)
-
-        self.nodes.append(AssignNode(code, target, influence_vars))
-
-        # Create dependency edge
-        for dependency in influence_vars:
-            if dependency not in self.last_seen:
-                if dependency in self.unknown_vars:
-                    self.unknown_vars[dependency].append(self._code_line)
-                else:
-                    self.unknown_vars[dependency] = [self._code_line]
-            else:
-                self._create_dep_edge(dependency, self._code_line)
-
-        # Create control edge
-        self.control_edges.append(GraphEdge(self._code_line, self._code_line+1, 'C'))
-
-        # Update the seen list
-        self.last_seen[target] = [self._code_line]
+        self.last_seen[node.targets[0].id] = [self._code_line]
 
         self._code_line += 1
 
@@ -88,18 +64,18 @@ class GraphBuilder(ast.NodeVisitor):
         self.nodes.append(ControlNode(code, checked_vars))
 
         # Then part
-        self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
+        self.control_edges.append(Edge(starting_if_code_line, self._code_line + 1, 'C'))
         last_seen_then_part, unknown_then_part = self._build_and_merge_inner_graph(node.body)
 
         # Create dep edges from inner to outer
         for var in unknown_then_part:
             for inner_code_line in unknown_then_part[var]:
                 for outer_code_line in self.last_seen[var]:
-                    self.dep_edges.append(GraphEdge(outer_code_line, inner_code_line, 'D'))
+                    self.dep_edges.append(Edge(outer_code_line, inner_code_line, 'D'))
 
         if not node.orelse:
-            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
-            self.control_edges.append(GraphEdge(self._code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(starting_if_code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(self._code_line, self._code_line + 1, 'C'))
 
             # Update last seen
             for var, code_lines in last_seen_then_part.iteritems():
@@ -109,17 +85,17 @@ class GraphBuilder(ast.NodeVisitor):
                     else:
                         self.last_seen[var] = [code_line]
         else:
-            self.control_edges.append(GraphEdge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
+            self.control_edges.append(Edge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
             self._code_line += 1
-            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(starting_if_code_line, self._code_line + 1, 'C'))
             last_seen_else_part, unknown_else_part = self._build_and_merge_inner_graph(node.orelse)
-            self.control_edges.append(GraphEdge(self._code_line, self._code_line+1, 'C'))
+            self.control_edges.append(Edge(self._code_line, self._code_line+1, 'C'))
 
             # Create dep edges from inner to outer
             for var in unknown_else_part:
                 for inner_code_line in unknown_else_part[var]:
                     for outer_code_line in self.last_seen[var]:
-                        self.dep_edges.append(GraphEdge(outer_code_line, inner_code_line, 'D'))
+                        self.dep_edges.append(Edge(outer_code_line, inner_code_line, 'D'))
 
             # Update last seen
             for var in last_seen_then_part:
@@ -140,7 +116,33 @@ class GraphBuilder(ast.NodeVisitor):
 
     def _create_dep_edge(self, var, to):
         for code_line in self.last_seen[var]:
-            self.dep_edges.append(GraphEdge(code_line, to, 'D'))
+            self.dep_edges.append(Edge(code_line, to))
+
+    def _create_assign_node_dependencies(self, node):
+        """
+        Find the dependency of the assign node and create an edge if possible, otherwise - append the dependency to unknown
+        """
+        code = astor.codegen.to_source(node)
+
+        # Find variable dependencies
+        influence_vars = []
+        if isinstance(node.value, ast.BinOp):
+            for inner_disassembly in [node.value.right, node.value.left]:
+                if isinstance(inner_disassembly, ast.Name):
+                    influence_vars.append(inner_disassembly.id)
+        elif isinstance(node.value, ast.Name):
+            influence_vars.append(node.value.id)
+        self.nodes.append(AssignNode(code, node.targets[0].id, influence_vars))
+
+        # Create dependency edge or insert to unknown
+        for dependency in influence_vars:
+            if dependency in self.last_seen:
+                self._create_dep_edge(dependency, self._code_line)
+            else:
+                if dependency in self.unknown_vars:
+                    self.unknown_vars[dependency].append(self._code_line)
+                else:
+                    self.unknown_vars[dependency] = [self._code_line]
 
     def _build_and_merge_inner_graph(self, body):
         code = ''
@@ -155,9 +157,9 @@ class GraphBuilder(ast.NodeVisitor):
         inner_graph.control_edges = inner_graph.control_edges[:-1]
 
         for edge in inner_graph.control_edges:
-            self.control_edges.append(GraphEdge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, 'C'))
+            self.control_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, 'C'))
         for edge in inner_graph.dep_edges:
-            self.dep_edges.append(GraphEdge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, 'D'))
+            self.dep_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, 'D'))
 
         # Update unknown
         for var in inner_graph.unknown_vars:
