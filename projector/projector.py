@@ -102,11 +102,12 @@ class GraphBuilder(ast.NodeVisitor):
                         self.dep_edges.append(GraphEdge(outer_code_line, inner_code_line, 'D'))
 
             # Update last seen
-            for var, code_line in last_seen_then_part.iteritems():
-                if var in self.last_seen:
-                    self.last_seen[var].append(code_line)
-                else:
-                    self.last_seen[var] = [code_line]
+            for var, code_lines in last_seen_then_part.iteritems():
+                for code_line in code_lines:
+                    if var in self.last_seen:
+                        self.last_seen[var].append(code_line)
+                    else:
+                        self.last_seen[var] = [code_line]
         else:
             self.control_edges.append(GraphEdge(self._code_line, self._code_line + len(node.orelse) + 2, 'C'))  # Create edge from 'then' skipping the 'else'
             self._code_line += 1
@@ -117,17 +118,17 @@ class GraphBuilder(ast.NodeVisitor):
             # Update last seen
             for var in last_seen_then_part:
                 if var not in last_seen_else_part and var not in self.last_seen:
-                    self.last_seen[var] = [last_seen_then_part[var]]
+                    self.last_seen[var] = last_seen_then_part[var]
                 elif var in last_seen_else_part:
-                    self.last_seen[var] = [last_seen_then_part[var], last_seen_else_part[var]]
+                    self.last_seen[var] = last_seen_then_part[var] + last_seen_else_part[var]
                 elif var not in last_seen_else_part:
-                    self.last_seen[var].append(last_seen_then_part[var])
+                    self.last_seen[var].extend(last_seen_then_part[var])
 
             for var in last_seen_else_part:
                 if var not in last_seen_then_part and var not in self.last_seen:
-                    self.last_seen[var] = [last_seen_else_part[var]]
+                    self.last_seen[var] = last_seen_else_part[var]
                 elif var not in last_seen_then_part:
-                    self.last_seen[var].append(last_seen_else_part[var])
+                    self.last_seen[var].extend(last_seen_else_part[var])
 
         self._code_line += 1
 
