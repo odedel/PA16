@@ -37,7 +37,8 @@ class ControlNode(GraphNode):
 class GraphBuilder(ast.NodeVisitor):
     def __init__(self):
         self.nodes = []
-        self.edges = []
+        self.dep_edges = []
+        self.control_edges = []
         self.last_seen = {}
         self.first_seen = {}
         self._code_line = 0
@@ -59,7 +60,10 @@ class GraphBuilder(ast.NodeVisitor):
 
         # Create dependency edge
         for dependency in influence_vars:
-            self.edges.append(GraphEdge(self.last_seen[dependency], self._code_line, 'D'))
+            self.dep_edges.append(GraphEdge(self.last_seen[dependency], self._code_line, 'D'))
+
+        # Create control edge
+        self.control_edges.append(GraphEdge(self._code_line, self._code_line+1, 'C'))
 
         # Update the seen list
         self.last_seen[target] = self._code_line
@@ -82,14 +86,18 @@ class GraphBuilder(ast.NodeVisitor):
         self.nodes.append(ControlNode(code, checked_vars))
 
         # Then part
+        self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line+1, 'C'))
         self._build_and_merge_inner_graph(node.body)
+        self.control_edges.append(GraphEdge(self._code_line, self._code_line+len(node.orelse), 'C'))
 
         if not node.orelse:
-            self.edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
+            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
         else:
             self._code_line += 1
-            self.edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
+            self.control_edges.append(GraphEdge(starting_if_code_line, self._code_line, 'C'))
             self._build_and_merge_inner_graph(node.orelse)
+            self.control_edges.append(GraphEdge(self._code_line, self._code_line+1, 'C'))
+
 
     def _build_and_merge_inner_graph(self, body):
         code = ''
@@ -100,15 +108,15 @@ class GraphBuilder(ast.NodeVisitor):
         # Merge graph and inner_graph
         self.nodes.extend(inner_graph.nodes)
 
-        for first_seen_code_line in inner_graph.first_seen.values():
-            self.edges.append(GraphEdge(self._code_line, first_seen_code_line + 1 + self._code_line, 'C'))
+        # Delete last control edge
+        inner_graph.control_edges = inner_graph.control_edges[:-1]
 
         self._code_line += 1
-        for edge in inner_graph.edges:
-            self.edges.append(GraphEdge(edge.from_ + self._code_line, edge.to + self._code_line, edge.CorD))
-        self._code_line += len(body)
-
-
+        for edge in inner_graph.control_edges:
+            self.control_edges.append(GraphEdge(edge.from_ + self._code_line, edge.to + self._code_line, 'C'))
+        for edge in inner_graph.dep_edges:
+            self.dep_edges.append(GraphEdge(edge.from_ + self._code_line, edge.to + self._code_line, 'D'))
+        self._code_line += len(body) - 1 
 
 
 def print_graph_nodes(nodes):
@@ -121,30 +129,27 @@ def create_graph(original_code):
     builder = GraphBuilder()
     builder.visit(ast.parse(original_code))
 
-    print_graph_nodes(builder.nodes)
-    print os.linesep, 'Edges: ', builder.edges, os.linesep
-
     return builder
 
 
-def create_projected_variable_path(program_graph, projected_variable):
-    mappy = {}
-    required = set()
-    for x, y, d in program_graph.edges:
-        if y not in mappy:
-            mappy[y] = []
-        mappy[y].append(x)
-
-    for i in xrange(len(program_graph.nodes)):
-        pos = len(program_graph.nodes) - i - 1
-        g = program_graph.nodes[pos]
-        if (isinstance(g, AssignNode) and g.assigned_var is projected_variable) or pos in required:
-            required.add(pos)
-            if pos in mappy:
-                required = required.union(mappy[pos])
-    required = list(required)
-
-    return sorted(required)
+# def create_projected_variable_path(program_graph, projected_variable):
+#     mappy = {}
+#     required = set()
+#     for x, y, d in program_graph.edges:
+#         if y not in mappy:
+#             mappy[y] = []
+#         mappy[y].append(x)
+#
+#     for i in xrange(len(program_graph.nodes)):
+#         pos = len(program_graph.nodes) - i - 1
+#         g = program_graph.nodes[pos]
+#         if (isinstance(g, AssignNode) and g.assigned_var is projected_variable) or pos in required:
+#             required.add(pos)
+#             if pos in mappy:
+#                 required = required.union(mappy[pos])
+#     required = list(required)
+#
+#     return sorted(required)
 
 
 def build_program(program_graph, projected_path):
@@ -156,8 +161,12 @@ def build_program(program_graph, projected_path):
 
 def project(original_code, projected_variable):
     program_graph = create_graph(original_code)
-    projected_path = create_projected_variable_path(program_graph, projected_variable)
-    return build_program(program_graph, projected_path)
+    # projected_path = create_projected_variable_path(program_graph, projected_variable)
+    # return build_program(program_graph, projected_path)
+
+    print_graph_nodes(program_graph.nodes)
+    print os.linesep, 'Control Edges: ', program_graph.control_edges, os.linesep
+    print os.linesep, 'Dep Edges: ', program_graph.dep_edges, os.linesep
 
 
 def main():
@@ -166,9 +175,9 @@ def main():
 
     projected_code = project(original_code, 'z')
 
-    print 'The projected program:'
-    for i in projected_code:
-        print i
+    # print 'The projected program:'
+    # for i in projected_code:
+    #     print i
 
 
 if __name__ == '__main__':
