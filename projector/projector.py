@@ -172,11 +172,11 @@ class GraphBuilder(ast.NodeVisitor):
                 if var in self.last_seen:
                     for outer_code_line in self.last_seen[var]:
                         self.dep_edges.append(Edge(outer_code_line, inner_code_line))
+                else:
+                    if var in self.unknown_vars:
+                        self.unknown_vars[var].extend(inner_code_lines)
                     else:
-                        if var in self.unknown_vars:
-                            self.unknown_vars[var].extend(inner_code_lines)
-                        else:
-                            self.unknown_vars[var] = inner_code_lines
+                        self.unknown_vars[var] = inner_code_lines
 
     def _fix_inner_code_lines(self, inner_dict):
         for var in inner_dict:
