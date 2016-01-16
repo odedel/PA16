@@ -1,8 +1,11 @@
 from projector import projector
 import test1
+import test3
+import test4
+import test6
 
 if __name__ == '__main__':
-    checks = [test1]
+    checks = [test1, test3, test4, test6]
     for test in checks:
         print 'Checking', test.name, '...'
         graph = projector.create_graph(test.code)
@@ -32,3 +35,5 @@ if __name__ == '__main__':
 
         if passed:
             print 'Pass Dep Edges'
+
+        print
