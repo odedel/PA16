@@ -82,6 +82,7 @@ class GraphBuilder(ast.NodeVisitor):
 
         if node.orelse:
             self._code_line += 1
+            self.nodes.append(ControlNode('else:', ''))
             self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
             last_seen_else_part, else_code_length = self._build_and_merge_inner_graph(node.orelse)
             self._fix_control_edges_that_point_to_the_end_of_block(block_starting_line, block_starting_line + then_code_length,
