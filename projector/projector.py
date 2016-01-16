@@ -246,24 +246,22 @@ def create_graph(original_code):
     return builder
 
 
-# def create_projected_variable_path(program_graph, projected_variable):
-#     mappy = {}
-#     required = set()
-#     for x, y, d in program_graph.edges:
-#         if y not in mappy:
-#             mappy[y] = []
-#         mappy[y].append(x)
-#
-#     for i in xrange(len(program_graph.nodes)):
-#         pos = len(program_graph.nodes) - i - 1
-#         g = program_graph.nodes[pos]
-#         if (isinstance(g, AssignNode) and g.assigned_var is projected_variable) or pos in required:
-#             required.add(pos)
-#             if pos in mappy:
-#                 required = required.union(mappy[pos])
-#     required = list(required)
-#
-#     return sorted(required)
+def create_projected_variable_path(program_graph, projected_variable):
+    mappy = {}
+    required = set()
+    for edge in program_graph.dep_edges:
+        if edge.to not in mappy:
+            mappy[edge.to] = []
+        mappy[edge.to].append(edge.from_)
+    for i in xrange(len(program_graph.nodes)):
+        pos = len(program_graph.nodes) - i - 1
+        g = program_graph.nodes[pos]
+        if (isinstance(g, StatementNode) and g.assigned_var is projected_variable) or pos in required:
+            required.add(pos)
+            if pos in mappy:
+                required = required.union(mappy[pos])
+    required = list(required)
+    return sorted(required)
 
 
 def build_program(program_graph, projected_path):
