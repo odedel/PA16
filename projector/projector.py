@@ -11,6 +11,9 @@ class Edge(object):
     def __repr__(self):
         return '(%s, %s)' % (self.from_, self.to)
 
+    def __eq__(self, other):
+        return other.from_ == self.from_ and other.to == self.to
+
 
 class Node(object):
     pass
@@ -106,7 +109,7 @@ class GraphBuilder(ast.NodeVisitor):
                     fixed_locations.extend(last_seen_then[var])
                 if var in last_seen_else:
                     fixed_locations.extend(last_seen_else[var])
-                self.last_seen[var] = fixed_locations
+                self.last_seen[var] = list(set(fixed_locations))
             elif var in last_seen_then:
                 self.last_seen[var].extend(last_seen_then[var])
             else:
@@ -123,7 +126,9 @@ class GraphBuilder(ast.NodeVisitor):
         for var in influence_vars:
             if var in self.last_seen:
                 for code_line in self.last_seen[var]:
-                    self.dep_edges.append(Edge(code_line, to))
+                    edge = Edge(code_line, to)
+                    if edge not in self.dep_edges:
+                        self.dep_edges.append(edge)
             else:
                 if var in self.unknown_vars:
                     self.unknown_vars[var].append(self._code_line)
@@ -179,8 +184,7 @@ class GraphBuilder(ast.NodeVisitor):
         for var, inner_code_lines in unknown_vars.iteritems():
             for inner_code_line in inner_code_lines:
                 if var in self.last_seen:
-                    for outer_code_line in self.last_seen[var]:
-                        self.dep_edges.append(Edge(outer_code_line, inner_code_line))
+                    self._create_dep_edge([var], inner_code_line)
                 else:
                     if var in self.unknown_vars:
                         self.unknown_vars[var].extend(inner_code_lines)
@@ -250,7 +254,7 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'tests\test7.py') as f:
+    with file(r'tests\test5.py') as f:
         original_code = f.read()
 
     projected_code = project(original_code, 'z')
