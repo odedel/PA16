@@ -7,9 +7,10 @@ from graph_utils import visualize
 
 
 class Edge(object):
-    def __init__(self, from_, to):
+    def __init__(self, from_, to, jmp_true=None):
         self.from_ = from_
         self.to = to
+        self.jmp_true = jmp_true
 
     def __repr__(self):
         return '(%s, %s)' % (self.from_, self.to)

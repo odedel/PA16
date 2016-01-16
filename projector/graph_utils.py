@@ -54,7 +54,12 @@ def visualize_edges(edges, nodes):
         print nodes[x].statement
         if y < len(nodes):
             dot.node(str(y), nodes[y].statement)
-            dot.edge(str(x), str(y), color="blue")
+            if edge.jmp_true is None:
+                dot.edge(str(x), str(y), color="black")
+            elif edge.jmp_true is True:
+                dot.edge(str(x), str(y), color="blue")
+            else:
+                dot.edge(str(x), str(y), color="red")
     # apply_styles(dot, styles)
     dot.render(r"T:\out.gv", view=False)
 
