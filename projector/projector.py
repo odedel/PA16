@@ -296,11 +296,27 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'tests\test7.py') as f:
+    with file(r'tests\test1.py') as f:
         original_code = f.read()
 
-    projected_code = project(original_code, 'z')
-
+    projected_code = project("""
+x = 2
+t = 124
+counter = 0
+while t < x:
+    t = t + 5
+    x = 2
+    t = t + 5
+    counter = counter + 1
+    if t > x:
+        t = t - counter
+        counter = counter + x
+    else:
+        x = x + 100
+        counter = counter - 1
+        t = counter + x
+t
+""", 'z')
     visualize(projected_code)
     # print 'The projected program:'
     # for i in projected_code:
