@@ -80,7 +80,15 @@ class GraphBuilder(ast.NodeVisitor):
         self._code_line += 1
 
     def visit_While(self, node):
-        print 'Kawa'
+        block_starting_line = self._code_line
+
+        self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+        self._create_condition_dependencies(node)
+        last_seen_inner, loop_code_length = self._build_and_merge_inner_graph(node.body)
+        self._merge_last_seen(last_seen_inner, last_seen_inner)
+        self.control_edges.append(Edge(block_starting_line + loop_code_length, block_starting_line))
+
+        self._code_line += 1
 
     def _fix_then_control_edges_that_does_not_aware_to_else(self, block_starting_line, then_code_length, else_code_length):
         """
