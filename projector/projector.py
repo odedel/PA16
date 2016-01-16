@@ -79,6 +79,9 @@ class GraphBuilder(ast.NodeVisitor):
 
         self._code_line += 1
 
+    def visit_While(self, node):
+        print 'Kawa'
+
     def _fix_then_control_edges_that_does_not_aware_to_else(self, block_starting_line, then_code_length, else_code_length):
         """
         If mekunan fixes - edges the points from the if to else
@@ -239,7 +242,7 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'..\Tests\test6.py') as f:
+    with file(r'tests\test7.py') as f:
         original_code = f.read()
 
     projected_code = project(original_code, 'z')
