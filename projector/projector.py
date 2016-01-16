@@ -89,7 +89,7 @@ class GraphBuilder(ast.NodeVisitor):
 
         self._create_condition_dependencies(node)
         last_seen_inner, loop_code_length = self._build_and_merge_inner_graph(node.body)
-        self._merge_last_seen(last_seen_inner, last_seen_inner)
+        self._merge_last_seen(last_seen_inner, {})
 
         code = ''
         for statement in node.body:
@@ -111,6 +111,10 @@ class GraphBuilder(ast.NodeVisitor):
                         self.unknown_vars[var].extend(inner_code_lines)
                     else:
                         self.unknown_vars[var] = inner_code_lines
+
+        self._create_condition_dependencies(node, block_starting_line)
+        self._fix_inner_code_lines(inner_graph.last_seen, block_starting_line)
+        self._merge_last_seen(inner_graph.last_seen, {})
 
         self.control_edges = self.control_edges[:-1]
         self.control_edges.append(Edge(block_starting_line + loop_code_length, block_starting_line))
@@ -134,11 +138,13 @@ class GraphBuilder(ast.NodeVisitor):
                     fixed_locations.extend(last_seen_then[var])
                 if var in last_seen_else:
                     fixed_locations.extend(last_seen_else[var])
-                self.last_seen[var] = list(set(fixed_locations))
+                self.last_seen[var] = fixed_locations
             elif var in last_seen_then:
                 self.last_seen[var].extend(last_seen_then[var])
+
             else:
                 self.last_seen[var].extend(last_seen_else[var])
+            self.last_seen[var] = list(set(self.last_seen[var]))
 
     def _handle_statement(self, node, update_last_seen=True):
             self._create_statement_dependencies(node)
@@ -177,13 +183,13 @@ class GraphBuilder(ast.NodeVisitor):
         self.nodes.append(StatementNode(code, node.targets[0].id if isinstance(node, ast.Assign) else '', influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
 
-    def _create_condition_dependencies(self, node):
+    def _create_condition_dependencies(self, node, code_line=None):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
         checked_vars = []
         for tested in [node.test.left, node.test.comparators[0]]:
             if isinstance(tested, ast.Name):
                 checked_vars.append(tested.id)
-        self._create_dep_edge(checked_vars, self._code_line)
+        self._create_dep_edge(checked_vars, self._code_line if not code_line else code_line)
         self.nodes.append(ControlNode(code, checked_vars))
 
     def _build_and_merge_inner_graph(self, body):
@@ -216,11 +222,11 @@ class GraphBuilder(ast.NodeVisitor):
                     else:
                         self.unknown_vars[var] = inner_code_lines
 
-    def _fix_inner_code_lines(self, inner_dict):
+    def _fix_inner_code_lines(self, inner_dict, reference_code_line=None):
         for var in inner_dict:
             fixed_code_lines = []
             for code_line in inner_dict[var]:
-                fixed_code_lines.append(code_line + self._code_line + 1)
+                fixed_code_lines.append(code_line + (self._code_line if not reference_code_line else reference_code_line) + 1)
             inner_dict[var] = fixed_code_lines
 
     def _merge_edges(self, outer_edges, inner_edges):
