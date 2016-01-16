@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(0, '../projector')
 import pytest
-from projector.projector import create_graph, Edge
+from projector.projector import create_graph, Edge, create_projected_variable_path
 
 code_1 = """
 x = 5
@@ -46,15 +46,12 @@ i = x + y
 """
 
 parameters_3 = [
-    ("x", [0, 6]),
-    ("y", [1, 4]),
-    ("z", [0, 2]),
-    ("w", [1, 3]),
-    ("k", [0, 4, 5]),
-    ("a", [7]),
-    ("b", [7, 8]),
-    ("c", [7, 8, 9]),
-    ("d", [7, 8, 9, 10]),
+    ("x", [0, 1, 2, 3, 4, 5]),
+    ("y", [0, 1, 3, 7]),
+    ("z", [2]),
+    ("m", [0, 1, 2, 3, 5, 6]),
+    ("h", [0, 1, 2, 3, 5, 6, 8]),
+    ("i", [0, 1, 2, 3, 5, 7, 9]),
 ]
 
 control_edges_3 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (3, 8), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10)]]
@@ -69,6 +66,12 @@ else:
     h = y
 t = h + x
 """
+
+parameters_4 = [
+    ("x", [0]),
+    ("y", [1]),
+    ("h", [0, 2, 3, 5]),
+]
 
 control_edges_4 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (2, 5), (3, 6), (5, 6), (6, 7)]]
 dep_edges_4 = [Edge(x,y) for x,y in [(0, 2), (0, 3), (1, 5), (0, 6), (3, 6), (5, 6)]]
@@ -151,14 +154,14 @@ dep_edges_9 = [Edge(x,y) for x,y in [(0, 3), (1, 3), (1, 4), (4, 6), (2, 7), (5,
              (9, 3), (14, 3), (5, 3), (12, 3), (9, 4), (14, 4), (10, 7), (13, 7), (5, 10), (7, 10), (1, 15), (14, 15)]]
 
 tests = [
-         (code_1, control_edges_1, dep_edges_1),
-         (code_3, control_edges_3, dep_edges_3),
-         (code_4, control_edges_4, dep_edges_4),
-         (code_5, control_edges_5, dep_edges_5),
-         (code_6, control_edges_6, dep_edges_6),
-         (code_7, control_edges_7, dep_edges_7),
-         (code_8, control_edges_8, dep_edges_8),
-         (code_9, control_edges_9, dep_edges_9),
+         (code_1, control_edges_1, dep_edges_1, parameters_1),
+         (code_3, control_edges_3, dep_edges_3, parameters_3),
+         (code_4, control_edges_4, dep_edges_4, parameters_4),
+         #(code_5, control_edges_5, dep_edges_5),
+         #(code_6, control_edges_6, dep_edges_6),
+         #(code_7, control_edges_7, dep_edges_7),
+         #(code_8, control_edges_8, dep_edges_8),
+         #(code_9, control_edges_9, dep_edges_9),
          ]
 
 
@@ -168,13 +171,16 @@ def compare_lists(l1, l2):
 
     assert len(sl1) == len(sl2)
     for i in xrange(len(sl1)):
-        assert sl1[i] == sl2[i], "arrays differ at location %d [%s] - [%s]" % (i, sl1[i], sl2[i])
+        assert sl1[i] == sl2[i], "arrays differ at location %d [%s] - [%s]" % (i, sl1, sl2)
 
 
-@pytest.mark.parametrize("code, control_edges, dep_edges", tests)
-def test_var(code, control_edges, dep_edges):
+@pytest.mark.parametrize("code, control_edges, dep_edges, parameters", tests)
+def test_var(code, control_edges, dep_edges, parameters):
     graph = create_graph(code)
     compare_lists(graph.control_edges, control_edges)
     compare_lists(graph.dep_edges, dep_edges)
+    for val, deps in parameters:
+        projection = create_projected_variable_path(graph, val)
+        compare_lists(projection, deps)
 
 
