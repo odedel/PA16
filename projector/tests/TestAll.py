@@ -145,6 +145,10 @@ if x > x:
 x
 """
 
+parameters_8 = [
+    ("x", [0, 1, 2]),
+]
+
 control_edges_8 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (1, 3)]]
 dep_edges_8 = [Edge(x,y) for x,y in [(0, 1), (0, 3), (2, 3)]]
 
@@ -179,7 +183,7 @@ tests = [
          (code_5, control_edges_5, dep_edges_5, parameters_5),
          (code_6, control_edges_6, dep_edges_6, parameters_6),
          (code_7, control_edges_7, dep_edges_7, parameters_7),
-         #(code_8, control_edges_8, dep_edges_8),
+         (code_8, control_edges_8, dep_edges_8, parameters_8),
          #(code_9, control_edges_9, dep_edges_9),
          ]
 
