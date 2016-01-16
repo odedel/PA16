@@ -83,6 +83,10 @@ x = x + x
 x
 """
 
+parameters_5 = [
+    ("x", [0, 1]),
+]
+
 control_edges_5 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3)]]
 dep_edges_5 = [Edge(x,y) for x,y in [(0, 1), (1, 2)]]
 
@@ -102,6 +106,13 @@ else:
 h
 """
 
+parameters_6 = [
+    ("x", [0]),
+    ("y", [1]),
+    #FIXME - ("h", [0, 1, 2, 3, 9]),
+    #FIXME - ("m", [0, 1, 2, 3, 4, 5, 7, 9, 10, 11]),
+]
+
 control_edges_6 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 12), (4, 7), (2, 9), (9, 10), (10, 11), (7, 12), (11, 12), (10, 12), (12, 13)]]
 dep_edges_6 = [Edge(x,y) for x,y in [(0, 2), (1, 2), (0, 3), (3, 4), (1, 4), (3, 5), (1, 7), (1, 9), (9, 10), (0, 10), (9, 11), (3, 12), (9, 12)]]
 
@@ -116,6 +127,13 @@ while t < x:
     counter = counter + 1
 t
 """
+
+parameters_7 = [
+    ("x", [0, 1, 3, 5, 6]),
+    ("t", [0, 1, 3, 4, 5, 6]),
+    ("counter", [0, 1, 2, 3, 4, 5, 6, 7]),
+]
+
 
 control_edges_7 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 3), (3, 8), (8, 9)]]
 dep_edges_7 = [Edge(x,y) for x,y in [(0, 3), (1, 3), (1, 4), (4, 6), (2, 7), (6, 3), (5, 3), (6, 4), (7, 7), (6, 8), (1, 8)]]
@@ -158,9 +176,9 @@ tests = [
          (code_1, control_edges_1, dep_edges_1, parameters_1),
          (code_3, control_edges_3, dep_edges_3, parameters_3),
          (code_4, control_edges_4, dep_edges_4, parameters_4),
-         #(code_5, control_edges_5, dep_edges_5),
-         #(code_6, control_edges_6, dep_edges_6),
-         #(code_7, control_edges_7, dep_edges_7),
+         (code_5, control_edges_5, dep_edges_5, parameters_5),
+         (code_6, control_edges_6, dep_edges_6, parameters_6),
+         (code_7, control_edges_7, dep_edges_7, parameters_7),
          #(code_8, control_edges_8, dep_edges_8),
          #(code_9, control_edges_9, dep_edges_9),
          ]
