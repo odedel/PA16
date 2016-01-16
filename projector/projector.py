@@ -242,7 +242,7 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'..\Tests\test3.py') as f:
+    with file(r'..\Tests\test6.py') as f:
         original_code = f.read()
 
     projected_code = project(original_code, 'z')
