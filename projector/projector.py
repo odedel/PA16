@@ -269,6 +269,7 @@ def build_program(program_graph, projected_path):
     return program
 
 
+def visualize(graph):
 def project(original_code, projected_variable):
     program_graph = create_graph(original_code)
     # projected_path = create_projected_variable_path(program_graph, projected_variable)
@@ -277,6 +278,7 @@ def project(original_code, projected_variable):
     print_graph_nodes(program_graph.nodes)
     print os.linesep, 'Control Edges: ', program_graph.control_edges, os.linesep
     print os.linesep, 'Dep Edges: ', program_graph.dep_edges, os.linesep
+    return program_graph
 
 
 def main():
@@ -285,6 +287,7 @@ def main():
 
     projected_code = project(original_code, 'z')
 
+    visualize(projected_code)
     # print 'The projected program:'
     # for i in projected_code:
     #     print i
