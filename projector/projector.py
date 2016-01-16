@@ -2,6 +2,7 @@ import os
 import ast
 import astor
 
+from graphviz import Digraph
 
 class Edge(object):
     def __init__(self, from_, to):
