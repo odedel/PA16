@@ -75,6 +75,7 @@ class GraphBuilder(ast.NodeVisitor):
             # self.control_edges.append(Edge(self._code_line, self._code_line+1))
             self._fix_then_control_edges_that_does_not_aware_to_else(block_starting_line, then_code_length, else_code_length)
         else:
+            self.control_edges.append(Edge(block_starting_line, block_starting_line + then_code_length + 1))
             last_seen_else_part = {}
         self._merge_last_seen(last_seen_then_part, last_seen_else_part)
 
@@ -241,7 +242,7 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'..\Tests\test6.py') as f:
+    with file(r'..\Tests\test3.py') as f:
         original_code = f.read()
 
     projected_code = project(original_code, 'z')
