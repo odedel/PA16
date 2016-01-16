@@ -50,8 +50,6 @@ def visualize_edges(graph):
         for edge in edges:
             x, y = edge.from_, edge.to
             # x_node = pydot.Node("Node B", style="filled", fillcolor="green")
-            if nodes[x].statement == 'if (t < x):':
-                i = 1
             dot.node(str(x), nodes[x].statement, color="black")
             print nodes[x].statement
             if y < len(nodes):
