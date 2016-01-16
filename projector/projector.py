@@ -11,7 +11,7 @@ class Node(object):
     pass
 
 
-class AssignNode(Node):
+class StatementNode(Node):
     def __init__(self, statement, assigned_var, influence_vars=[]):
         self.statement = statement
         self.assigned_var = assigned_var
@@ -43,11 +43,11 @@ class GraphBuilder(ast.NodeVisitor):
         self._code_line = 0
         super(GraphBuilder, self).__init__()
 
+    def visit_Expr(self, node):
+        self._handle_statement(node, False)
+
     def visit_Assign(self, node):
-        self._create_assign_node_dependencies(node)
-        self.control_edges.append(Edge(self._code_line, self._code_line+1))
-        self.last_seen[node.targets[0].id] = [self._code_line]
-        self._code_line += 1
+        self._handle_statement(node)
 
     def visit_If(self, node):
         block_starting_line = self._code_line
@@ -84,11 +84,18 @@ class GraphBuilder(ast.NodeVisitor):
             else:
                 self.last_seen[var].extend(last_seen_else[var])
 
+    def _handle_statement(self, node, update_last_seen=True):
+            self._create_statement_dependencies(node)
+            self.control_edges.append(Edge(self._code_line, self._code_line+1))
+            if update_last_seen:
+                self.last_seen[node.targets[0].id] = [self._code_line]
+            self._code_line += 1
+
     def _create_dep_edge(self, var, to):
         for code_line in self.last_seen[var]:
             self.dep_edges.append(Edge(code_line, to))
 
-    def _create_assign_node_dependencies(self, node):
+    def _create_statement_dependencies(self, node):
         """
         Find the dependency of the assign node and create an edge if possible, otherwise - append the dependency to unknown
         """
@@ -102,7 +109,7 @@ class GraphBuilder(ast.NodeVisitor):
                     influence_vars.append(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
             influence_vars.append(node.value.id)
-        self.nodes.append(AssignNode(code, node.targets[0].id, influence_vars))
+        self.nodes.append(StatementNode(code, node.targets[0].id if isinstance(node, ast.Assign) else '', influence_vars))
 
         # Create dependency edge or insert to unknown
         for dependency in influence_vars:
@@ -212,7 +219,7 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'..\Tests\test3.py') as f:
+    with file(r'..\Tests\test5.py') as f:
         original_code = f.read()
 
     projected_code = project(original_code, 'z')
