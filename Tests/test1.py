@@ -1,4 +1,3 @@
-# project on z
 
 
 x = 5
