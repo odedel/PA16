@@ -87,31 +87,17 @@ class GraphBuilder(ast.NodeVisitor):
 
         self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
 
+        # First iteration
         self._create_condition_dependencies(node)
         last_seen_inner, loop_code_length = self._build_and_merge_inner_graph(node.body)
         self._merge_last_seen(last_seen_inner, {})
 
+        # Any other iteration
         code = ''
         for statement in node.body:
             code += astor.codegen.to_source(statement) + os.linesep
         inner_graph = create_graph(code)
-
-        for var in inner_graph.unknown_vars:
-            fixed_code_lines = []
-            for code_line in inner_graph.unknown_vars[var]:
-                fixed_code_lines.append(code_line + block_starting_line + 1)
-            inner_graph.unknown_vars[var] = fixed_code_lines
-
-        for var, inner_code_lines in inner_graph.unknown_vars.iteritems():
-            for inner_code_line in inner_code_lines:
-                if var in self.last_seen:
-                    self._create_dep_edge([var], inner_code_line)
-                else:
-                    if var in self.unknown_vars:
-                        self.unknown_vars[var].extend(inner_code_lines)
-                    else:
-                        self.unknown_vars[var] = inner_code_lines
-
+        self._find_unknown_variables(inner_graph.unknown_vars, block_starting_line)
         self._create_condition_dependencies(node, block_starting_line)
         self._fix_inner_code_lines(inner_graph.last_seen, block_starting_line)
         self._merge_last_seen(inner_graph.last_seen, {})
@@ -209,8 +195,8 @@ class GraphBuilder(ast.NodeVisitor):
 
         return inner_graph.last_seen, inner_graph.code_length
 
-    def _find_unknown_variables(self, unknown_vars):
-        self._fix_inner_code_lines(unknown_vars)
+    def _find_unknown_variables(self, unknown_vars, reference_code_line=None):
+        self._fix_inner_code_lines(unknown_vars, reference_code_line)
 
         for var, inner_code_lines in unknown_vars.iteritems():
             for inner_code_line in inner_code_lines:
