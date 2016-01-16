@@ -86,9 +86,32 @@ class GraphBuilder(ast.NodeVisitor):
         block_starting_line = self._code_line
 
         self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+
         self._create_condition_dependencies(node)
         last_seen_inner, loop_code_length = self._build_and_merge_inner_graph(node.body)
         self._merge_last_seen(last_seen_inner, last_seen_inner)
+
+        code = ''
+        for statement in node.body:
+            code += astor.codegen.to_source(statement) + os.linesep
+        inner_graph = create_graph(code)
+
+        for var in inner_graph.unknown_vars:
+            fixed_code_lines = []
+            for code_line in inner_graph.unknown_vars[var]:
+                fixed_code_lines.append(code_line + block_starting_line + 1)
+            inner_graph.unknown_vars[var] = fixed_code_lines
+
+        for var, inner_code_lines in inner_graph.unknown_vars.iteritems():
+            for inner_code_line in inner_code_lines:
+                if var in self.last_seen:
+                    self._create_dep_edge([var], inner_code_line)
+                else:
+                    if var in self.unknown_vars:
+                        self.unknown_vars[var].extend(inner_code_lines)
+                    else:
+                        self.unknown_vars[var] = inner_code_lines
+
         self.control_edges = self.control_edges[:-1]
         self.control_edges.append(Edge(block_starting_line + loop_code_length, block_starting_line))
         self.control_edges.append(Edge(block_starting_line, block_starting_line + loop_code_length + 1))
