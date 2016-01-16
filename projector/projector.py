@@ -66,13 +66,11 @@ class GraphBuilder(ast.NodeVisitor):
         # Then part
         self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
         last_seen_then_part, then_code_length = self._build_and_merge_inner_graph(node.body)
-        # self.control_edges.append(Edge(self._code_line, self._code_line + then_code_length + (2 if node.orelse else 1)))
 
         if node.orelse:
             self._code_line += 1
             self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
             last_seen_else_part, else_code_length = self._build_and_merge_inner_graph(node.orelse)
-            # self.control_edges.append(Edge(self._code_line, self._code_line+1))
             self._fix_then_control_edges_that_does_not_aware_to_else(block_starting_line, then_code_length, else_code_length)
         else:
             self.control_edges.append(Edge(block_starting_line, block_starting_line + then_code_length + 1))
@@ -154,7 +152,6 @@ class GraphBuilder(ast.NodeVisitor):
         inner_graph = create_graph(code)
 
         self.nodes.extend(inner_graph.nodes)
-        # inner_graph.control_edges = inner_graph.control_edges[:-1]
 
         self._merge_edges(self.control_edges, inner_graph.control_edges)
         self._merge_edges(self.dep_edges, inner_graph.dep_edges)
