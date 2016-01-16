@@ -247,19 +247,43 @@ def create_graph(original_code):
 
 
 def create_projected_variable_path(program_graph, projected_variable):
-    mappy = {}
+    dep_map = {}
+    control_map = {}
+    r_control_map = {}
     required = set()
     for edge in program_graph.dep_edges:
-        if edge.to not in mappy:
-            mappy[edge.to] = []
-        mappy[edge.to].append(edge.from_)
+        if edge.to not in dep_map:
+            dep_map[edge.to] = []
+        dep_map[edge.to].append(edge.from_)
+    for edge in program_graph.control_edges:
+        if edge.from_ not in control_map:
+            control_map[edge.from_] = []
+        control_map[edge.from_].append(edge.to)
+    for edge in program_graph.control_edges:
+        if edge.to not in r_control_map:
+            r_control_map[edge.to] = []
+        r_control_map[edge.to].append(edge.from_)
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
         g = program_graph.nodes[pos]
         if (isinstance(g, StatementNode) and g.assigned_var is projected_variable) or pos in required:
             required.add(pos)
-            if pos in mappy:
-                required = required.union(mappy[pos])
+
+            if pos in r_control_map:
+                prev = r_control_map[pos]
+
+                while True:
+                    if len(prev) > 1:
+                        assert False, "FIXME"
+                    prev = prev[0]
+                    if len(control_map[prev]) > 1:
+                        required.add(prev)
+                        required = required.union(dep_map[prev])
+                    if prev not in r_control_map:
+                        break
+                    prev = r_control_map[prev]
+                if pos in dep_map:
+                    required = required.union(dep_map[pos])
     required = list(required)
     return sorted(required)
 
