@@ -91,9 +91,16 @@ class GraphBuilder(ast.NodeVisitor):
                 self.last_seen[node.targets[0].id] = [self._code_line]
             self._code_line += 1
 
-    def _create_dep_edge(self, var, to):
-        for code_line in self.last_seen[var]:
-            self.dep_edges.append(Edge(code_line, to))
+    def _create_dep_edge(self, influence_vars, to):
+        for var in influence_vars:
+            if var in self.last_seen:
+                for code_line in self.last_seen[var]:
+                    self.dep_edges.append(Edge(code_line, to))
+            else:
+                if var in self.unknown_vars:
+                    self.unknown_vars[var].append(self._code_line)
+                else:
+                    self.unknown_vars[var] = [self._code_line]
 
     def _create_statement_dependencies(self, node):
         """
@@ -110,16 +117,7 @@ class GraphBuilder(ast.NodeVisitor):
         elif isinstance(node.value, ast.Name):
             influence_vars.append(node.value.id)
         self.nodes.append(StatementNode(code, node.targets[0].id if isinstance(node, ast.Assign) else '', influence_vars))
-
-        # Create dependency edge or insert to unknown
-        for dependency in influence_vars:
-            if dependency in self.last_seen:
-                self._create_dep_edge(dependency, self._code_line)
-            else:
-                if dependency in self.unknown_vars:
-                    self.unknown_vars[dependency].append(self._code_line)
-                else:
-                    self.unknown_vars[dependency] = [self._code_line]
+        self._create_dep_edge(influence_vars, self._code_line)
 
     def _create_condition_dependencies(self, node):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
@@ -127,7 +125,7 @@ class GraphBuilder(ast.NodeVisitor):
         for tested in [node.test.left, node.test.comparators[0]]:
             if isinstance(tested, ast.Name):
                 checked_vars.append(tested.id)
-                self._create_dep_edge(tested.id, self._code_line)
+        self._create_dep_edge(checked_vars, self._code_line)
         self.nodes.append(ControlNode(code, checked_vars))
 
     def _build_and_merge_inner_graph(self, body):
