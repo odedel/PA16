@@ -260,6 +260,7 @@ def create_projected_variable_path(program_graph, projected_variable):
             control_map[edge.from_] = []
         control_map[edge.from_].append(edge.to)
     for edge in program_graph.control_edges:
+        if edge.to > edge.from_:
         if edge.to not in r_control_map:
             r_control_map[edge.to] = []
         r_control_map[edge.to].append(edge.from_)
