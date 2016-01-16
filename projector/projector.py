@@ -11,8 +11,14 @@ class Edge(object):
     def __repr__(self):
         return '(%s, %s)' % (self.from_, self.to)
 
+    def __hash__(self):
+        return hash((self.from_, self.to))
+
     def __eq__(self, other):
         return other.from_ == self.from_ and other.to == self.to
+
+    def __lt__(self, other):
+        return other.from_ > self.from_ or (other.from_ == self.from_ and other.to > self.to)
 
 
 class Node(object):
