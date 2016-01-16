@@ -2,9 +2,14 @@ import os
 import ast
 import astor
 
-from collections import namedtuple
 
-Edge = namedtuple('GraphEdge', ['from_', 'to'])
+class Edge(object):
+    def __init__(self, from_, to):
+        self.from_ = from_
+        self.to = to
+
+    def __repr__(self):
+        return '(%s, %s)' % (self.from_, self.to)
 
 
 class Node(object):
@@ -43,6 +48,10 @@ class GraphBuilder(ast.NodeVisitor):
         self._code_line = 0
         super(GraphBuilder, self).__init__()
 
+    @property
+    def code_length(self):
+        return self._code_line
+
     def visit_Expr(self, node):
         self._handle_statement(node, False)
 
@@ -56,19 +65,28 @@ class GraphBuilder(ast.NodeVisitor):
 
         # Then part
         self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
-        last_seen_then_part = self._build_and_merge_inner_graph(node.body)
-        self.control_edges.append(Edge(self._code_line, self._code_line + len(node.orelse) + (2 if node.orelse else 1)))
+        last_seen_then_part, then_code_length = self._build_and_merge_inner_graph(node.body)
+        # self.control_edges.append(Edge(self._code_line, self._code_line + then_code_length + (2 if node.orelse else 1)))
 
         if node.orelse:
             self._code_line += 1
             self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
-            last_seen_else_part = self._build_and_merge_inner_graph(node.orelse)
-            self.control_edges.append(Edge(self._code_line, self._code_line+1))
+            last_seen_else_part, else_code_length = self._build_and_merge_inner_graph(node.orelse)
+            # self.control_edges.append(Edge(self._code_line, self._code_line+1))
+            self._fix_then_control_edges_that_does_not_aware_to_else(block_starting_line, then_code_length, else_code_length)
         else:
             last_seen_else_part = {}
         self._merge_last_seen(last_seen_then_part, last_seen_else_part)
 
         self._code_line += 1
+
+    def _fix_then_control_edges_that_does_not_aware_to_else(self, block_starting_line, then_code_length, else_code_length):
+        """
+        If mekunan fixes - edges the points from the if to else
+        """
+        for edge in self.control_edges:
+            if edge.from_ > block_starting_line and edge.to == block_starting_line + then_code_length + 1:
+                edge.to = block_starting_line + then_code_length + else_code_length + 2
 
     def _merge_last_seen(self, last_seen_then, last_seen_else):
         for var in set(last_seen_then.keys() + last_seen_else.keys()):
@@ -135,16 +153,16 @@ class GraphBuilder(ast.NodeVisitor):
         inner_graph = create_graph(code)
 
         self.nodes.extend(inner_graph.nodes)
-        inner_graph.control_edges = inner_graph.control_edges[:-1]
+        # inner_graph.control_edges = inner_graph.control_edges[:-1]
 
         self._merge_edges(self.control_edges, inner_graph.control_edges)
         self._merge_edges(self.dep_edges, inner_graph.dep_edges)
         self._fix_inner_code_lines(inner_graph.last_seen)
         self._find_unknown_variables(inner_graph.unknown_vars)
 
-        self._code_line += len(body)
+        self._code_line += inner_graph.code_length
 
-        return inner_graph.last_seen
+        return inner_graph.last_seen, inner_graph.code_length
 
     def _find_unknown_variables(self, unknown_vars):
         self._fix_inner_code_lines(unknown_vars)
