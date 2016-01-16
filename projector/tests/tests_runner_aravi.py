@@ -1,8 +1,8 @@
 from projector import projector
-import test1, test3, test4, test5, test6, test7
+import test1, test3, test4, test5, test6, test7, test8
 
 if __name__ == '__main__':
-    checks = [test1, test3, test4, test5, test6, test7]
+    checks = [test1, test3, test4, test5, test6, test7, test8]
     for test in checks:
         print 'Checking', test.name, '...'
         graph = projector.create_graph(test.code)
