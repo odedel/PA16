@@ -1,7 +1,10 @@
-import os
 import ast
+import os
+
 import astor
-from graphviz import Digraph
+
+from graph_utils import visualize
+
 
 class Edge(object):
     def __init__(self, from_, to):
@@ -267,21 +270,6 @@ def build_program(program_graph, projected_path):
     for i in projected_path:
         program.append(program_graph.nodes[i].statement)
     return program
-
-
-def visualize(graph):
-    dot = Digraph(comment='Graph')
-    for edge in graph.control_edges:
-        x,y  = edge.from_, edge.to
-        if graph.nodes[x].statement == 'if (t < x):':
-            i = 1
-        dot.node(str(x), graph.nodes[x].statement)
-        print graph.nodes[x].statement
-        if y < len(graph.nodes):
-            dot.node(str(y), graph.nodes[y].statement)
-            print graph.nodes[y].statement
-            dot.edge(str(x), str(y))
-    dot.render(r"T:\out.gv", view=False)
 
 
 def project(original_code, projected_variable):
