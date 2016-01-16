@@ -74,7 +74,8 @@ class GraphBuilder(ast.NodeVisitor):
             self._code_line += 1
             self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
             last_seen_else_part, else_code_length = self._build_and_merge_inner_graph(node.orelse)
-            self._fix_then_control_edges_that_does_not_aware_to_else(block_starting_line, then_code_length, else_code_length)
+            self._fix_control_edges_that_point_to_the_end_of_block(block_starting_line, block_starting_line + then_code_length,
+                                                                   block_starting_line + then_code_length + else_code_length + 2)
         else:
             self.control_edges.append(Edge(block_starting_line, block_starting_line + then_code_length + 1))
             last_seen_else_part = {}
@@ -102,19 +103,21 @@ class GraphBuilder(ast.NodeVisitor):
         self._fix_inner_code_lines(inner_graph.last_seen, block_starting_line)
         self._merge_last_seen(inner_graph.last_seen, {})
 
-        self.control_edges = self.control_edges[:-1]
+        # Add and Fix edges
+        self._fix_control_edges_that_point_to_the_end_of_block(block_starting_line, block_starting_line + inner_graph.code_length, block_starting_line)
+
         self.control_edges.append(Edge(block_starting_line + loop_code_length, block_starting_line))
         self.control_edges.append(Edge(block_starting_line, block_starting_line + loop_code_length + 1))
 
         self._code_line += 1
 
-    def _fix_then_control_edges_that_does_not_aware_to_else(self, block_starting_line, then_code_length, else_code_length):
+    def _fix_control_edges_that_point_to_the_end_of_block(self, block_starting_line, block_end_line, right_pointing_line):
         """
         If mekunan fixes - edges the points from the if to else
         """
         for edge in self.control_edges:
-            if edge.from_ > block_starting_line and edge.to == block_starting_line + then_code_length + 1:
-                edge.to = block_starting_line + then_code_length + else_code_length + 2
+            if edge.from_ > block_starting_line and edge.to == block_end_line + 1:
+                edge.to = right_pointing_line
 
     def _merge_last_seen(self, last_seen_then, last_seen_else):
         for var in set(last_seen_then.keys() + last_seen_else.keys()):
