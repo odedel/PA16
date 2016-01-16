@@ -272,10 +272,9 @@ def create_projected_variable_path(program_graph, projected_variable):
             if pos in r_control_map:
                 prev = r_control_map[pos]
 
-                while True:
-                    if len(prev) > 1:
-                        assert False, "FIXME"
-                    prev = prev[0]
+                while prev is not 0:
+                    l = prev
+                    for prev in l:
                     if len(control_map[prev]) > 1:
                         required.add(prev)
                         required = required.union(dep_map[prev])
