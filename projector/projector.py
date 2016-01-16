@@ -261,9 +261,9 @@ def create_projected_variable_path(program_graph, projected_variable):
         control_map[edge.from_].append(edge.to)
     for edge in program_graph.control_edges:
         if edge.to > edge.from_:
-        if edge.to not in r_control_map:
-            r_control_map[edge.to] = []
-        r_control_map[edge.to].append(edge.from_)
+            if edge.to not in r_control_map:
+                r_control_map[edge.to] = []
+            r_control_map[edge.to].append(edge.from_)
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
         g = program_graph.nodes[pos]
@@ -276,12 +276,12 @@ def create_projected_variable_path(program_graph, projected_variable):
                 while prev is not 0:
                     l = prev
                     for prev in l:
-                    if len(control_map[prev]) > 1:
-                        required.add(prev)
-                        required = required.union(dep_map[prev])
-                    if prev not in r_control_map:
-                        break
-                    prev = r_control_map[prev]
+                        if len(control_map[prev]) > 1:
+                            required.add(prev)
+                            required = required.union(dep_map[prev])
+                        if prev not in r_control_map:
+                            break
+                        prev = r_control_map[prev]
                 if pos in dep_map:
                     required = required.union(dep_map[pos])
     required = list(required)
@@ -319,15 +319,9 @@ while t < x:
     x = 2
     t = t + 5
     counter = counter + 1
-    if t > x:
-        t = t - counter
-        counter = counter + x
-    else:
-        x = x + 100
-        counter = counter - 1
-        t = counter + x
 t
-""", 'z')
+""", 'x')
+    create_projected_variable_path(projected_code, "x")
     visualize(projected_code)
     # print 'The projected program:'
     # for i in projected_code:
