@@ -180,6 +180,12 @@ while t < x:
 t
 """
 
+parameters_9 = [
+    ("x", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]),
+    ("t", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]),
+    ("counter", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]),
+]
+
 control_edges_9 = [Edge(x, y) for x, y in
                    [(0, 1), (1, 2), (2, 3), (3, 4), (3, 15), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (8, 12), (9, 10),
                     (10, 3), (12, 13), (13, 14), (14, 3), (15, 16)]]
@@ -189,7 +195,7 @@ dep_edges_9 = [Edge(x, y) for x, y in
                 (9, 3), (14, 3), (5, 3), (12, 3), (9, 4), (14, 4), (10, 7), (13, 7), (5, 10), (7, 10), (1, 15),
                 (14, 15)]]
 
-code10 = """
+code_10 = """
 x = X()
 y = Y()
 x.a = y
@@ -245,8 +251,8 @@ tests = [
     (code_6, control_edges_6, dep_edges_6, parameters_6),
     (code_7, control_edges_7, dep_edges_7, parameters_7),
     (code_8, control_edges_8, dep_edges_8, parameters_8),
-    # (code_9, control_edges_9, dep_edges_9),
-    (code10, control_edges_10, dep_edges_10, parameters_10),
+    (code_9, control_edges_9, dep_edges_9, parameters_9),
+    (code_10, control_edges_10, dep_edges_10, parameters_10),
     (code_13, control_edges_13, dep_edges_13, parameters_13),
     (code_14, control_edges_14, dep_edges_14, parameters_14)
 ]
