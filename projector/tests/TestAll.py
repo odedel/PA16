@@ -249,7 +249,11 @@ tmp.a = 2
 x
 """
 
-# Should be edge from x to tmp.a and x
+control_edges_14 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
+dep_edges_14 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 3), (1, 3), (2, 3)]]
+
+parameters_14 = []
+
 
 code_16 = """
 x = X()

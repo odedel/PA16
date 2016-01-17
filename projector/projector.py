@@ -344,22 +344,17 @@ def project(original_code):
 
 
 def main():
-    with file(r'tests\test15.py') as f:
-        original_code = f.read()
+    # with file(r'tests\test15.py') as f:
+    #     original_code = f.read()
+    #
+    # project(original_code)
 
-    project(original_code)
-
-#     projected_code = project("""
-# x = 2
-# t = 124
-# counter = 0
-# while t < x:
-#     t = t + 5
-#     x = 2
-#     t = t + 5
-#     counter = counter + 1
-# t
-# """, 'x')
+    projected_code = project("""
+x = X()
+x.a = 2
+tmp = x
+tmp.a
+""")
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
     # print 'The projected program:'
