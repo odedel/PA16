@@ -193,6 +193,8 @@ class GraphBuilder(ast.NodeVisitor):
             influence_vars.append(node.value.id)
         elif isinstance(node.value, ast.Call):
             influence_vars.append('#' + node.value.func.id + '#' + str(uuid.uuid4()))
+        elif isinstance(node.value, ast.Attribute):
+            influence_vars.append(node.value.value.id + '#' + node.value.attr)
 
         # Find the variables that we passed and influenced by me
         if isinstance(node, ast.Assign):
@@ -350,7 +352,7 @@ def project(original_code):
 
 
 def main():
-    with file(r'tests\test10.py') as f:
+    with file(r'tests\test14.py') as f:
         original_code = f.read()
 
     project(original_code)
