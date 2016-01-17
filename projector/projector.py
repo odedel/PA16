@@ -188,11 +188,26 @@ class GraphBuilder(ast.NodeVisitor):
                 if isinstance(inner_disassembly, ast.Name):
                     influence_vars.append(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
-            influence_vars.append(node.value.id)
+            value_var = node.value.id
+            influence_vars.append(value_var)
+            if value_var in self.var_to_object:
+                self.var_to_object[target] = self.var_to_object[value_var]
+                for obj in self.var_to_object[value_var]:
+                    self.object_to_var[obj].append(target)
         elif isinstance(node.value, ast.Call):      # Call to ctor
-            obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
-            self.var_to_object[target] = [obj]
-            self.object_to_var[obj] = [target]
+            if '#' not in target:
+                obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
+                self.var_to_object[target] = [obj]
+                self.object_to_var[obj] = [target]
+            else:
+                father_target, attribute = target.split('#')
+                influence_vars.append(father_target)
+
+                self.var_to_object[target] = []
+                for obj in self.var_to_object[father_target]:
+                    new_obj = obj + '#' + target.split('#')[1]
+                    self.var_to_object[target].append(new_obj)
+                    self.object_to_var[new_obj] = [target]
         elif isinstance(node.value, ast.Attribute):
             influence_vars.append(node.value.value.id + '#' + node.value.attr)
 
@@ -201,22 +216,13 @@ class GraphBuilder(ast.NodeVisitor):
             if var in self.var_to_object:
                 for obj in self.var_to_object[var]:
                     for other_var in self.object_to_var[obj]:
-                        if other_var not in influence_vars:
-                            influence_vars.append(other_var)
-                            influence_vars.extend(filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys()))
-
-        # Adds tzimud between the object and the new variable
-        if target:
-            for var in influence_vars:
-                if var in self.var_to_object:
-                    for obj in self.var_to_object[var]:
-                        self.object_to_var[obj].append(target)
-                        if target not in self.var_to_object:
-                            self.var_to_object[target] = []
-                        self.var_to_object[target].extend(self.var_to_object[var])
-
-        if target.find('#') > -1:
-            influence_vars.append(target.split('#')[0])
+                        if other_var is not target:
+                            if other_var not in influence_vars:
+                                influence_vars.append(other_var)
+                            sons_reference = filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys())
+                            for s in sons_reference:
+                                if s not in influence_vars:
+                                    influence_vars.append(s)
 
         self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
@@ -351,7 +357,7 @@ def main():
 
     projected_code = project("""
 x = X()
-x.a = 2
+x.a = X()
 tmp = x
 tmp.a
 """)
