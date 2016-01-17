@@ -1,6 +1,6 @@
 import ast
 import os
-
+import uuid
 import astor
 
 from graph_utils import visualize
@@ -58,6 +58,7 @@ class GraphBuilder(ast.NodeVisitor):
         self.control_edges = []
         self.last_seen = {}
         self.unknown_vars = {}
+        self.pointing_vars = {}
         self._code_line = 0
         super(GraphBuilder, self).__init__()
 
@@ -147,15 +148,25 @@ class GraphBuilder(ast.NodeVisitor):
             self.last_seen[var] = list(set(self.last_seen[var]))
 
     def _handle_statement(self, node, update_last_seen=True):
-            self._create_statement_dependencies(node)
-            self.control_edges.append(Edge(self._code_line, self._code_line+1))
-            if update_last_seen:
-                self.last_seen[node.targets[0].id] = [self._code_line]
-            self._code_line += 1
+        # Find target
+        target = ''
+        if isinstance(node, ast.Assign):
+            if isinstance(node.targets[0], ast.Name):   # Assign to variable
+                target = node.targets[0].id
+            else:   # Assign to attribute
+                target = node.targets[0].value.id + '#' + node.targets[0].attr
+
+        self._create_statement_dependencies(node, target)
+        self.control_edges.append(Edge(self._code_line, self._code_line+1))
+        if update_last_seen:
+            self.last_seen[target] = [self._code_line]
+        self._code_line += 1
 
     def _create_dep_edge(self, influence_vars, to):
         for var in influence_vars:
-            if var in self.last_seen:
+            if var.startswith('#'):     # It's instance and not variable
+                pass
+            elif var in self.last_seen:
                 for code_line in self.last_seen[var]:
                     edge = Edge(code_line, to)
                     if edge not in self.dep_edges:
@@ -166,13 +177,13 @@ class GraphBuilder(ast.NodeVisitor):
                 else:
                     self.unknown_vars[var] = [self._code_line]
 
-    def _create_statement_dependencies(self, node):
+    def _create_statement_dependencies(self, node, target):
         """
         Find the dependency of the assign node and create an edge if possible, otherwise - append the dependency to unknown
         """
         code = astor.codegen.to_source(node)
 
-        # Find variable dependencies
+        # Find the variables that influence on me variable dependencies
         influence_vars = []
         if isinstance(node.value, ast.BinOp):
             for inner_disassembly in [node.value.right, node.value.left]:
@@ -180,8 +191,41 @@ class GraphBuilder(ast.NodeVisitor):
                     influence_vars.append(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
             influence_vars.append(node.value.id)
-        self.nodes.append(StatementNode(code, node.targets[0].id if isinstance(node, ast.Assign) else '', influence_vars))
+        elif isinstance(node.value, ast.Call):
+            influence_vars.append('#' + node.value.func.id + '#' + str(uuid.uuid4()))
+
+        # Find the variables that we passed and influenced by me
+        if isinstance(node, ast.Assign):
+            self.pointing_vars[target] = self._find_actual_object(target, influence_vars)
+            if '#' in target:   # Assign to attribute
+                variable_name = target.split('#')[0]
+                influenced_variables = self._find_variables_that_pointing_to_the_same_object(variable_name)
+                for var in influenced_variables:
+                    for code_line in self.last_seen[var]:
+                        self.dep_edges.append(Edge(from_=self._code_line, to=code_line))
+
+        self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
+
+    def _find_variables_that_pointing_to_the_same_object(self, variable_name):
+        return_list = []
+        for pointed_object in self.pointing_vars[variable_name]:
+            for var, objects in self.pointing_vars.iteritems():
+                for object_ in objects:
+                    if object_ is pointed_object:
+                        return_list.append(var)
+        return return_list
+
+    def _find_actual_object(self, target, vars):
+        return_list = []
+        for var in vars:
+            if var.startswith('#'):
+                return_list.append(var)
+            elif var in self.pointing_vars:
+                return_list.extend(self._find_actual_object(target, self.pointing_vars[var]))
+            elif var is not target:   # The var is holding an integer value
+                return_list.append(var)
+        return return_list
 
     def _create_condition_dependencies(self, node, code_line=None):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
@@ -296,10 +340,8 @@ def build_program(program_graph, projected_path):
     return program
 
 
-def project(original_code, projected_variable):
+def project(original_code):
     program_graph = create_graph(original_code)
-    # projected_path = create_projected_variable_path(program_graph, projected_variable)
-    # return build_program(program_graph, projected_path)
 
     print_graph_nodes(program_graph.nodes)
     print os.linesep, 'Control Edges: ', program_graph.control_edges, os.linesep
@@ -308,22 +350,24 @@ def project(original_code, projected_variable):
 
 
 def main():
-    with file(r'tests\test1.py') as f:
+    with file(r'tests\test10.py') as f:
         original_code = f.read()
 
-    projected_code = project("""
-x = 2
-t = 124
-counter = 0
-while t < x:
-    t = t + 5
-    x = 2
-    t = t + 5
-    counter = counter + 1
-t
-""", 'x')
-    create_projected_variable_path(projected_code, "x")
-    visualize(projected_code)
+    project(original_code)
+
+#     projected_code = project("""
+# x = 2
+# t = 124
+# counter = 0
+# while t < x:
+#     t = t + 5
+#     x = 2
+#     t = t + 5
+#     counter = counter + 1
+# t
+# """, 'x')
+#     create_projected_variable_path(projected_code, "x")
+#     visualize(projected_code)
     # print 'The projected program:'
     # for i in projected_code:
     #     print i

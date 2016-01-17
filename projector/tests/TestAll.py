@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, '../projector')
 import pytest
 from projector.projector import create_graph, Edge, create_projected_variable_path
@@ -29,8 +30,9 @@ parameters_1 = [
     ("d", [7, 8, 9, 10]),
 ]
 
-control_edges_1 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 11)]]
-dep_edges_1 = [Edge(x,y) for x,y in [(0, 2), (1, 3), (0, 5), (4, 5), (7, 8), (8, 9), (8, 10), (9, 10)]]
+control_edges_1 = [Edge(x, y) for x, y in
+                   [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 11)]]
+dep_edges_1 = [Edge(x, y) for x, y in [(0, 2), (1, 3), (0, 5), (4, 5), (7, 8), (8, 9), (8, 10), (9, 10)]]
 
 code_3 = """
 x = 5
@@ -54,8 +56,10 @@ parameters_3 = [
     ("i", [0, 1, 2, 3, 5, 7, 9]),
 ]
 
-control_edges_3 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (3, 8), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10)]]
-dep_edges_3 = [Edge(x,y) for x,y in [(0, 1), (0, 3), (1, 4), (1, 5), (2, 5), (5, 6), (2, 6), (2, 8), (6, 8), (0, 9), (1, 9), (5, 9), (7, 9)]]
+control_edges_3 = [Edge(x, y) for x, y in
+                   [(0, 1), (1, 2), (2, 3), (3, 4), (3, 8), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10)]]
+dep_edges_3 = [Edge(x, y) for x, y in
+               [(0, 1), (0, 3), (1, 4), (1, 5), (2, 5), (5, 6), (2, 6), (2, 8), (6, 8), (0, 9), (1, 9), (5, 9), (7, 9)]]
 
 code_4 = """
 x = 5
@@ -74,8 +78,8 @@ parameters_4 = [
     ("t", [0, 1, 2, 3, 5, 6]),
 ]
 
-control_edges_4 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (2, 5), (3, 6), (5, 6), (6, 7)]]
-dep_edges_4 = [Edge(x,y) for x,y in [(0, 2), (0, 3), (1, 5), (0, 6), (3, 6), (5, 6)]]
+control_edges_4 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (2, 5), (3, 6), (5, 6), (6, 7)]]
+dep_edges_4 = [Edge(x, y) for x, y in [(0, 2), (0, 3), (1, 5), (0, 6), (3, 6), (5, 6)]]
 
 code_5 = """
 x = 2
@@ -87,8 +91,8 @@ parameters_5 = [
     ("x", [0, 1]),
 ]
 
-control_edges_5 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3)]]
-dep_edges_5 = [Edge(x,y) for x,y in [(0, 1), (1, 2)]]
+control_edges_5 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3)]]
+dep_edges_5 = [Edge(x, y) for x, y in [(0, 1), (1, 2)]]
 
 code_6 = """
 x = 5
@@ -113,8 +117,12 @@ parameters_6 = [
     ("m", [0, 1, 2, 3, 4, 5, 7, 9, 10, 11]),
 ]
 
-control_edges_6 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 12), (4, 7), (2, 9), (9, 10), (10, 11), (7, 12), (11, 12), (10, 12), (12, 13)]]
-dep_edges_6 = [Edge(x,y) for x,y in [(0, 2), (1, 2), (0, 3), (3, 4), (1, 4), (3, 5), (1, 7), (1, 9), (9, 10), (0, 10), (9, 11), (3, 12), (9, 12)]]
+control_edges_6 = [Edge(x, y) for x, y in
+                   [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 12), (4, 7), (2, 9), (9, 10), (10, 11), (7, 12),
+                    (11, 12), (10, 12), (12, 13)]]
+dep_edges_6 = [Edge(x, y) for x, y in
+               [(0, 2), (1, 2), (0, 3), (3, 4), (1, 4), (3, 5), (1, 7), (1, 9), (9, 10), (0, 10), (9, 11), (3, 12),
+                (9, 12)]]
 
 code_7 = """
 x = 2
@@ -134,9 +142,10 @@ parameters_7 = [
     ("counter", [0, 1, 2, 3, 4, 5, 6, 7]),
 ]
 
-
-control_edges_7 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 3), (3, 8), (8, 9)]]
-dep_edges_7 = [Edge(x,y) for x,y in [(0, 3), (1, 3), (1, 4), (4, 6), (2, 7), (6, 3), (5, 3), (6, 4), (7, 7), (6, 8), (1, 8)]]
+control_edges_7 = [Edge(x, y) for x, y in
+                   [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 3), (3, 8), (8, 9)]]
+dep_edges_7 = [Edge(x, y) for x, y in
+               [(0, 3), (1, 3), (1, 4), (4, 6), (2, 7), (6, 3), (5, 3), (6, 4), (7, 7), (6, 8), (1, 8)]]
 
 code_8 = """
 x = 2
@@ -149,8 +158,8 @@ parameters_8 = [
     ("x", [0, 1, 2]),
 ]
 
-control_edges_8 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (1, 3)]]
-dep_edges_8 = [Edge(x,y) for x,y in [(0, 1), (0, 3), (2, 3)]]
+control_edges_8 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (1, 3)]]
+dep_edges_8 = [Edge(x, y) for x, y in [(0, 1), (0, 3), (2, 3)]]
 
 code_9 = """
 x = 2
@@ -171,21 +180,41 @@ while t < x:
 t
 """
 
+control_edges_9 = [Edge(x, y) for x, y in
+                   [(0, 1), (1, 2), (2, 3), (3, 4), (3, 15), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (8, 12), (9, 10),
+                    (10, 3), (12, 13), (13, 14), (14, 3), (15, 16)]]
+dep_edges_9 = [Edge(x, y) for x, y in
+               [(0, 3), (1, 3), (1, 4), (4, 6), (2, 7), (5, 8), (6, 8), (6, 9), (7, 9), (5, 12), (7, 13), (13, 14),
+                (12, 14), (9, 15),
+                (9, 3), (14, 3), (5, 3), (12, 3), (9, 4), (14, 4), (10, 7), (13, 7), (5, 10), (7, 10), (1, 15),
+                (14, 15)]]
 
-control_edges_9 = [Edge(x,y) for x,y in [(0, 1), (1, 2), (2, 3), (3, 4), (3, 15), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (8, 12), (9, 10), (10, 3), (12, 13), (13, 14), (14, 3), (15, 16)]]
-dep_edges_9 = [Edge(x,y) for x,y in [(0, 3), (1, 3), (1, 4), (4, 6), (2, 7), (5, 8), (6, 8), (6, 9), (7, 9), (5, 12), (7, 13), (13, 14), (12, 14), (9, 15),
-             (9, 3), (14, 3), (5, 3), (12, 3), (9, 4), (14, 4), (10, 7), (13, 7), (5, 10), (7, 10), (1, 15), (14, 15)]]
+code10 = """
+x = X()
+y = Y()
+x.a = y
+y.b = 2
+x
+"""
+
+control_edges_10 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]]
+dep_edges_10 = [Edge(x, y) for x, y in [(1, 2), (2, 0), (3, 1), (3, 2), (0, 4)]]
+
+parameters_10 = [
+    ("x", [0, 1, 2, 3, 4]),
+]
 
 tests = [
-         (code_1, control_edges_1, dep_edges_1, parameters_1),
-         (code_3, control_edges_3, dep_edges_3, parameters_3),
-         (code_4, control_edges_4, dep_edges_4, parameters_4),
-         (code_5, control_edges_5, dep_edges_5, parameters_5),
-         (code_6, control_edges_6, dep_edges_6, parameters_6),
-         (code_7, control_edges_7, dep_edges_7, parameters_7),
-         (code_8, control_edges_8, dep_edges_8, parameters_8),
-         #(code_9, control_edges_9, dep_edges_9),
-         ]
+    (code_1, control_edges_1, dep_edges_1, parameters_1),
+    (code_3, control_edges_3, dep_edges_3, parameters_3),
+    (code_4, control_edges_4, dep_edges_4, parameters_4),
+    (code_5, control_edges_5, dep_edges_5, parameters_5),
+    (code_6, control_edges_6, dep_edges_6, parameters_6),
+    (code_7, control_edges_7, dep_edges_7, parameters_7),
+    (code_8, control_edges_8, dep_edges_8, parameters_8),
+    # (code_9, control_edges_9, dep_edges_9),
+    (code10, control_edges_10, dep_edges_10, parameters_10)
+]
 
 
 def compare_lists(l1, l2):
@@ -205,5 +234,3 @@ def test_var(code, control_edges, dep_edges, parameters):
     for val, deps in parameters:
         projection = create_projected_variable_path(graph, val)
         compare_lists(projection, deps)
-
-
