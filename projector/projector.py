@@ -189,11 +189,14 @@ class GraphBuilder(ast.NodeVisitor):
                     influence_vars.append(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
             value_var = node.value.id
-            influence_vars.append(value_var)
             if value_var in self.var_to_object:
-                self.var_to_object[target] = self.var_to_object[value_var]
                 for obj in self.var_to_object[value_var]:
+                    for other_var in self.object_to_var[obj]:
+                        influence_vars.append(other_var)
                     self.object_to_var[obj].append(target)
+                self.var_to_object[target] = self.var_to_object[value_var]
+            else:
+                influence_vars.append(value_var)
         elif isinstance(node.value, ast.Call):      # Call to ctor
             if '#' not in target:
                 obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
@@ -210,6 +213,10 @@ class GraphBuilder(ast.NodeVisitor):
                     self.object_to_var[new_obj] = [target]
         elif isinstance(node.value, ast.Attribute):
             influence_vars.append(node.value.value.id + '#' + node.value.attr)
+            father_target = node.value.value.id
+            for obj in self.var_to_object[father_target]:
+                for other_var in self.object_to_var[obj]:
+                    influence_vars.append(other_var)
 
         # Other references to the influence list
         for var in influence_vars:
@@ -223,6 +230,14 @@ class GraphBuilder(ast.NodeVisitor):
                             for s in sons_reference:
                                 if s not in influence_vars:
                                     influence_vars.append(s)
+
+        if '#' in target:
+            father_target = target.split('#')[0]
+            if father_target in self.object_to_var:
+                for obj in self.object_to_var[father_target]:
+                    for var in self.object_to_var[obj]:
+                        if var not in influence_vars:
+                            influence_vars.append(var)
 
         self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
@@ -357,9 +372,14 @@ def main():
 
     projected_code = project("""
 x = X()
-x.a = X()
-tmp = x
-tmp.a
+x = X()
+y = Y()
+x.a = y
+y.b = 2
+y
+x
+y = Y()
+y
 """)
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
