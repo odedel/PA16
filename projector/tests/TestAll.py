@@ -262,7 +262,7 @@ def compare_lists(l1, l2):
     sl1 = sorted(list(set(l1)))
     sl2 = sorted(list(set(set(l2))))
 
-    assert len(sl1) == len(sl2)
+    assert len(sl1) == len(sl2), "arrays differ [%s] - [%s]" % (",".join(sl1), ",".join(sl2))
     for i in xrange(len(sl1)):
         assert sl1[i] == sl2[i], "arrays differ at location %d [%s] - [%s]" % (i, sl1, sl2)
 
