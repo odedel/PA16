@@ -198,7 +198,7 @@ x
 """
 
 control_edges_10 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]]
-dep_edges_10 = [Edge(x, y) for x, y in [(1, 2), (2, 0), (3, 1), (3, 2), (0, 4)]]
+dep_edges_10 = [Edge(x, y) for x, y in [(0, 2), (1, 2), (1, 3), (0, 4), (2, 4)]]
 
 parameters_10 = [
     #("x", [0, 1, 2, 3, 4]),
@@ -217,7 +217,7 @@ y
 """
 
 control_edges_13 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9)]]
-dep_edges_13 = [Edge(x, y) for x, y in [(3, 1), (2, 3), (4, 2), (2, 5), (1, 6), (7, 8), (4, 3)]]
+dep_edges_13 = [Edge(x, y) for x, y in [(1, 3), (2, 3), (2, 4), (2, 5), (4, 5), (1, 6), (3, 6), (7, 8)]]
 
 parameters_13 = [
 
@@ -231,9 +231,26 @@ y.b
 """
 
 control_edges_14 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
-dep_edges_14 = [Edge(x, y) for x, y in [(1, 0), (2, 0), (1, 3)]]
+dep_edges_14 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (0, 3), (1, 3)]]
 
 parameters_14 = []
+
+
+code_15 = """
+x = X()
+tmp = x
+tmp.a = 2
+x
+"""
+
+# Should be edge from x to tmp.a and x
+
+code_16 = """
+x = X()
+x.a = 2
+tmp = x
+tmp.a
+"""
 
 
 

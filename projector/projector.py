@@ -58,7 +58,8 @@ class GraphBuilder(ast.NodeVisitor):
         self.control_edges = []
         self.last_seen = {}
         self.unknown_vars = {}
-        self.pointing_vars = {}
+        self.var_to_object = {}
+        self.object_to_var = {}
         self._code_line = 0
         super(GraphBuilder, self).__init__()
 
@@ -142,7 +143,6 @@ class GraphBuilder(ast.NodeVisitor):
                 self.last_seen[var] = fixed_locations
             elif var in last_seen_then:
                 self.last_seen[var].extend(last_seen_then[var])
-
             else:
                 self.last_seen[var].extend(last_seen_else[var])
             self.last_seen[var] = list(set(self.last_seen[var]))
@@ -164,9 +164,7 @@ class GraphBuilder(ast.NodeVisitor):
 
     def _create_dep_edge(self, influence_vars, to):
         for var in influence_vars:
-            if var.startswith('#'):     # It's instance and not variable
-                pass
-            elif var in self.last_seen:
+            if var in self.last_seen:
                 for code_line in self.last_seen[var]:
                     edge = Edge(code_line, to)
                     if edge not in self.dep_edges:
@@ -191,43 +189,37 @@ class GraphBuilder(ast.NodeVisitor):
                     influence_vars.append(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
             influence_vars.append(node.value.id)
-        elif isinstance(node.value, ast.Call):
-            influence_vars.append('#' + node.value.func.id + '#' + str(uuid.uuid4()))
+        elif isinstance(node.value, ast.Call):      # Call to ctor
+            obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
+            self.var_to_object[target] = [obj]
+            self.object_to_var[obj] = [target]
         elif isinstance(node.value, ast.Attribute):
             influence_vars.append(node.value.value.id + '#' + node.value.attr)
 
-        # Find the variables that we passed and influenced by me
-        if isinstance(node, ast.Assign):
-            self.pointing_vars[target] = self._find_actual_object(target, influence_vars)
-            if '#' in target:   # Assign to attribute
-                variable_name = target.split('#')[0]
-                influenced_variables = self._find_variables_that_pointing_to_the_same_object(variable_name)
-                for var in influenced_variables:
-                    for code_line in self.last_seen[var]:
-                        self.dep_edges.append(Edge(from_=self._code_line, to=code_line))
+        # Other references to the influence list
+        for var in influence_vars:
+            if var in self.var_to_object:
+                for obj in self.var_to_object[var]:
+                    for other_var in self.object_to_var[obj]:
+                        if other_var not in influence_vars:
+                            influence_vars.append(other_var)
+                            influence_vars.extend(filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys()))
+
+        # Adds tzimud between the object and the new variable
+        if target:
+            for var in influence_vars:
+                if var in self.var_to_object:
+                    for obj in self.var_to_object[var]:
+                        self.object_to_var[obj].append(target)
+                        if target not in self.var_to_object:
+                            self.var_to_object[target] = []
+                        self.var_to_object[target].extend(self.var_to_object[var])
+
+        if target.find('#') > -1:
+            influence_vars.append(target.split('#')[0])
 
         self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
-
-    def _find_variables_that_pointing_to_the_same_object(self, variable_name):
-        return_list = []
-        for pointed_object in self.pointing_vars[variable_name]:
-            for var, objects in self.pointing_vars.iteritems():
-                for object_ in objects:
-                    if object_ is pointed_object:
-                        return_list.append(var)
-        return return_list
-
-    def _find_actual_object(self, target, vars):
-        return_list = []
-        for var in vars:
-            if var.startswith('#'):
-                return_list.append(var)
-            elif var in self.pointing_vars:
-                return_list.extend(self._find_actual_object(target, self.pointing_vars[var]))
-            elif var is not target:   # The var is holding an integer value
-                return_list.append(var)
-        return return_list
 
     def _create_condition_dependencies(self, node, code_line=None):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
@@ -352,7 +344,7 @@ def project(original_code):
 
 
 def main():
-    with file(r'tests\test14.py') as f:
+    with file(r'tests\test15.py') as f:
         original_code = f.read()
 
     project(original_code)
