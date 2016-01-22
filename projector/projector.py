@@ -188,7 +188,13 @@ class GraphBuilder(ast.NodeVisitor):
                 if isinstance(inner_disassembly, ast.Name):
                     influence_vars.add(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
-            influence_vars.add(node.value.id)
+            assigned_var = node.value.id
+            influence_vars.add(assigned_var)
+            if isinstance(node, ast.Assign):    # Need to update the abstract domain
+                self.var_to_object[target] = set()
+                for obj in self.var_to_object[assigned_var]:
+                    self.object_to_var[obj].add(target)
+                    self.var_to_object[target].add(obj)
         elif isinstance(node.value, ast.Call):      # Call to ctor
             obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
             self.var_to_object[target] = set([obj])
@@ -204,40 +210,16 @@ class GraphBuilder(ast.NodeVisitor):
         influence_vars = influence_vars.union(set(tmp_list))
 
         # Find all the may influence vars using the abstract domain
+        tmp_list = []
         for var in influence_vars:
             for other_var in self._get_vars_that_points_to_the_same_object(var):
-                influence_vars.add(other_var)
-                influence_vars = influence_vars.union(filter(lambda x: x.startswith(other_var + '#'), self.var_to_object.keys()))
-
-                other_var = self._get_vars_that_points_to_the_same_object(name)
-                for other_var_with_attribute in self._get_vars_that_points_to_the_same_object(other_var + '#' + attribute):
-
+                tmp_list.append(other_var)
+        influence_vars = influence_vars.union(set(tmp_list))
 
         print influence_vars
 
-        # # Other references to the influence list
-        # for var in influence_vars:
-        #     if var in self.var_to_object:
-        #         for obj in self.var_to_object[var]:
-        #             for other_var in self.object_to_var[obj]:
-        #                 if other_var is not target:
-        #                     if other_var not in influence_vars:
-        #                         influence_vars.append(other_var)
-        #                     sons_reference = filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys())
-        #                     for s in sons_reference:
-        #                         if s not in influence_vars:
-        #                             influence_vars.append(s)
-        #
-        # if '#' in target:
-        #     father_target = target.split('#')[0]
-        #     if father_target in self.object_to_var:
-        #         for obj in self.object_to_var[father_target]:
-        #             for var in self.object_to_var[obj]:
-        #                 if var not in influence_vars:
-        #                     influence_vars.append(var)
-        #
-        # self.nodes.append(StatementNode(code, target, influence_vars))
-        # self._create_dep_edge(influence_vars, self._code_line)
+        self.nodes.append(StatementNode(code, target, influence_vars))
+        self._create_dep_edge(influence_vars, self._code_line)
 
     def _get_vars_that_points_to_the_same_object(self, var):
         return_list = []
@@ -245,6 +227,10 @@ class GraphBuilder(ast.NodeVisitor):
             for obj in self.var_to_object[var]:
                 for other_var in self.object_to_var[obj]:
                     return_list.append(other_var)
+
+        while var in return_list:
+            return_list.remove(var)
+
         return return_list
 
     def _create_condition_dependencies(self, node, code_line=None):
