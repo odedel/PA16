@@ -30,10 +30,11 @@ class Node(object):
 
 
 class StatementNode(Node):
-    def __init__(self, statement, assigned_var, influence_vars=[]):
+    def __init__(self, statement, assigned_var, indent, influence_vars=[]):
         self.statement = statement
         self.assigned_var = assigned_var
         self.influence_vars = influence_vars
+        self.indent = indent
 
     def __repr__(self):
         return '(%s, %s, %s)' % (self.statement, self.assigned_var, self.influence_vars)
@@ -43,16 +44,17 @@ class StatementNode(Node):
 
 
 class ControlNode(Node):
-    def __init__(self, statement, checked_vars):
+    def __init__(self, statement, checked_vars, indent):
         self.statement = statement
         self.checked_vars = checked_vars
+        self.indent = indent
 
     def __str__(self):
         return "%s\t\t%s" % (str(self.checked_vars).ljust(20), self.statement)
 
 
 class GraphBuilder(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self, indent_level):
         self.nodes = []
         self.dep_edges = []
         self.control_edges = []
@@ -61,6 +63,7 @@ class GraphBuilder(ast.NodeVisitor):
         self.var_to_object = {}
         self.object_to_var = {}
         self._code_line = 0
+        self.indent_level = indent_level
         super(GraphBuilder, self).__init__()
 
     @property
@@ -84,7 +87,7 @@ class GraphBuilder(ast.NodeVisitor):
 
         if node.orelse:
             self._code_line += 1
-            self.nodes.append(ControlNode('else:', ''))
+            self.nodes.append(ControlNode('else:', '', self.indent_level))
             self.control_edges.append(Edge(block_starting_line, self._code_line + 1, jmp_true=False))
             last_seen_else_part, else_code_length = self._build_and_merge_inner_graph(node.orelse)
             self._fix_control_edges_that_point_to_the_end_of_block(block_starting_line, block_starting_line + then_code_length,
@@ -110,7 +113,7 @@ class GraphBuilder(ast.NodeVisitor):
         code = ''
         for statement in node.body:
             code += astor.codegen.to_source(statement) + os.linesep
-        inner_graph = create_graph(code)
+        inner_graph = create_graph(code, self.indent_level + 1)
         self._find_unknown_variables(inner_graph.unknown_vars, block_starting_line)
         self._create_condition_dependencies(node, block_starting_line)
         self._fix_inner_code_lines(inner_graph.last_seen, block_starting_line)
@@ -239,7 +242,7 @@ class GraphBuilder(ast.NodeVisitor):
                         if var not in influence_vars:
                             influence_vars.append(var)
 
-        self.nodes.append(StatementNode(code, target, influence_vars))
+        self.nodes.append(StatementNode(code, target, self.indent_level, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
 
     def _create_condition_dependencies(self, node, code_line=None):
@@ -249,13 +252,13 @@ class GraphBuilder(ast.NodeVisitor):
             if isinstance(tested, ast.Name):
                 checked_vars.append(tested.id)
         self._create_dep_edge(checked_vars, self._code_line if not code_line else code_line)
-        self.nodes.append(ControlNode(code, checked_vars))
+        self.nodes.append(ControlNode(code, checked_vars, self.indent_level))
 
     def _build_and_merge_inner_graph(self, body):
         code = ''
         for statement in body:
             code += astor.codegen.to_source(statement) + os.linesep
-        inner_graph = create_graph(code)
+        inner_graph = create_graph(code, self.indent_level + 1)
 
         self.nodes.extend(inner_graph.nodes)
 
@@ -299,8 +302,8 @@ def print_graph_nodes(nodes):
         print g
 
 
-def create_graph(original_code):
-    builder = GraphBuilder()
+def create_graph(original_code, indent_level):
+    builder = GraphBuilder(indent_level)
     builder.visit(ast.parse(original_code))
 
     return builder
@@ -356,7 +359,7 @@ def build_program(program_graph, projected_path):
 
 
 def project(original_code):
-    program_graph = create_graph(original_code)
+    program_graph = create_graph(original_code, 0)
 
     print_graph_nodes(program_graph.nodes)
     print os.linesep, 'Control Edges: ', program_graph.control_edges, os.linesep
@@ -389,7 +392,8 @@ while t < x:
 t
 """)
 #     create_projected_variable_path(projected_code, "x")
-#     visualize(projected_code)
+    OUT_FILE_PATH = r"T:\out.gv"
+    visualize(projected_code, OUT_FILE_PATH)
     # print 'The projected program:'
     # for i in projected_code:
     #     print i
