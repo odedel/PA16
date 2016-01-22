@@ -182,65 +182,70 @@ class GraphBuilder(ast.NodeVisitor):
         code = astor.codegen.to_source(node)
 
         # Find the variables that influence on me variable dependencies
-        influence_vars = []
+        influence_vars = set()
         if isinstance(node.value, ast.BinOp):
             for inner_disassembly in [node.value.right, node.value.left]:
                 if isinstance(inner_disassembly, ast.Name):
-                    influence_vars.append(inner_disassembly.id)
+                    influence_vars.add(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
-            value_var = node.value.id
-            if value_var in self.var_to_object:
-                for obj in self.var_to_object[value_var]:
-                    for other_var in self.object_to_var[obj]:
-                        influence_vars.append(other_var)
-                    self.object_to_var[obj].append(target)
-                self.var_to_object[target] = self.var_to_object[value_var]
-            else:
-                influence_vars.append(value_var)
+            influence_vars.add(node.value.id)
         elif isinstance(node.value, ast.Call):      # Call to ctor
-            if '#' not in target:
-                obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
-                self.var_to_object[target] = [obj]
-                self.object_to_var[obj] = [target]
-            else:
-                father_target, attribute = target.split('#')
-                influence_vars.append(father_target)
-
-                self.var_to_object[target] = []
-                for obj in self.var_to_object[father_target]:
-                    new_obj = obj + '#' + target.split('#')[1]
-                    self.var_to_object[target].append(new_obj)
-                    self.object_to_var[new_obj] = [target]
+            obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
+            self.var_to_object[target] = set([obj])
+            self.object_to_var[obj] = set([target])
         elif isinstance(node.value, ast.Attribute):
-            influence_vars.append(node.value.value.id + '#' + node.value.attr)
-            father_target = node.value.value.id
-            for obj in self.var_to_object[father_target]:
-                for other_var in self.object_to_var[obj]:
-                    influence_vars.append(other_var)
+            influence_vars.add(node.value.value.id + '#' + node.value.attr)
 
-        # Other references to the influence list
+        tmp_list = []
         for var in influence_vars:
-            if var in self.var_to_object:
-                for obj in self.var_to_object[var]:
-                    for other_var in self.object_to_var[obj]:
-                        if other_var is not target:
-                            if other_var not in influence_vars:
-                                influence_vars.append(other_var)
-                            sons_reference = filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys())
-                            for s in sons_reference:
-                                if s not in influence_vars:
-                                    influence_vars.append(s)
+            if '#' in var:  # The influence variable is attribute, the declaration of the object is influencing too.
+                name, attribute = var.split('#')
+                tmp_list.append(name)
+        influence_vars = influence_vars.union(set(tmp_list))
 
-        if '#' in target:
-            father_target = target.split('#')[0]
-            if father_target in self.object_to_var:
-                for obj in self.object_to_var[father_target]:
-                    for var in self.object_to_var[obj]:
-                        if var not in influence_vars:
-                            influence_vars.append(var)
+        # Find all the may influence vars using the abstract domain
+        for var in influence_vars:
+            for other_var in self._get_vars_that_points_to_the_same_object(var):
+                influence_vars.add(other_var)
+                influence_vars = influence_vars.union(filter(lambda x: x.startswith(other_var + '#'), self.var_to_object.keys()))
 
-        self.nodes.append(StatementNode(code, target, influence_vars))
-        self._create_dep_edge(influence_vars, self._code_line)
+                other_var = self._get_vars_that_points_to_the_same_object(name)
+                for other_var_with_attribute in self._get_vars_that_points_to_the_same_object(other_var + '#' + attribute):
+
+
+        print influence_vars
+
+        # # Other references to the influence list
+        # for var in influence_vars:
+        #     if var in self.var_to_object:
+        #         for obj in self.var_to_object[var]:
+        #             for other_var in self.object_to_var[obj]:
+        #                 if other_var is not target:
+        #                     if other_var not in influence_vars:
+        #                         influence_vars.append(other_var)
+        #                     sons_reference = filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys())
+        #                     for s in sons_reference:
+        #                         if s not in influence_vars:
+        #                             influence_vars.append(s)
+        #
+        # if '#' in target:
+        #     father_target = target.split('#')[0]
+        #     if father_target in self.object_to_var:
+        #         for obj in self.object_to_var[father_target]:
+        #             for var in self.object_to_var[obj]:
+        #                 if var not in influence_vars:
+        #                     influence_vars.append(var)
+        #
+        # self.nodes.append(StatementNode(code, target, influence_vars))
+        # self._create_dep_edge(influence_vars, self._code_line)
+
+    def _get_vars_that_points_to_the_same_object(self, var):
+        return_list = []
+        if var in self.var_to_object:
+            for obj in self.var_to_object[var]:
+                for other_var in self.object_to_var[obj]:
+                    return_list.append(other_var)
+        return return_list
 
     def _create_condition_dependencies(self, node, code_line=None):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
@@ -372,14 +377,9 @@ def main():
 
     projected_code = project("""
 x = X()
-x = X()
-y = Y()
-x.a = y
-y.b = 2
-y
-x
-y = Y()
-y
+x.a = X()
+tmp = x
+tmp.a
 """)
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
