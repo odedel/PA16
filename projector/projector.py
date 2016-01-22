@@ -371,15 +371,22 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = X()
-x = X()
-y = Y()
-x.a = y
-y.b = 2
-y
-x
-y = Y()
-y
+x = 2
+t = 124
+counter = 0
+while t < x:
+    t = t + 5
+    x = 2
+    t = t + 5
+    counter = counter + 1
+    if t > x:
+        t = t - counter
+        counter = counter + x
+    else:
+        x = x + 100
+        counter = counter - 1
+        t = counter + x
+t
 """)
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
