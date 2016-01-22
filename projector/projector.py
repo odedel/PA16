@@ -78,13 +78,13 @@ class GraphBuilder(ast.NodeVisitor):
         self._create_condition_dependencies(node)
 
         # Then part
-        self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+        self.control_edges.append(Edge(block_starting_line, self._code_line + 1, jmp_true=True))
         last_seen_then_part, then_code_length = self._build_and_merge_inner_graph(node.body)
 
         if node.orelse:
             self._code_line += 1
             self.nodes.append(ControlNode('else:', ''))
-            self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+            self.control_edges.append(Edge(block_starting_line, self._code_line + 1, jmp_true=False))
             last_seen_else_part, else_code_length = self._build_and_merge_inner_graph(node.orelse)
             self._fix_control_edges_that_point_to_the_end_of_block(block_starting_line, block_starting_line + then_code_length,
                                                                    block_starting_line + then_code_length + else_code_length + 2)
@@ -98,7 +98,7 @@ class GraphBuilder(ast.NodeVisitor):
     def visit_While(self, node):
         block_starting_line = self._code_line
 
-        self.control_edges.append(Edge(block_starting_line, self._code_line + 1))
+        self.control_edges.append(Edge(block_starting_line, self._code_line + 1, jmp_true=True))
 
         # First iteration
         self._create_condition_dependencies(node)
@@ -277,7 +277,7 @@ class GraphBuilder(ast.NodeVisitor):
 
     def _merge_edges(self, outer_edges, inner_edges):
         for edge in inner_edges:
-            outer_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1))
+            outer_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, edge.jmp_true))
 
 
 def print_graph_nodes(nodes):
