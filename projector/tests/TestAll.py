@@ -206,12 +206,13 @@ tmp = y.b
 tmp.c = X()
 y.b
 y
+x.a
 """
 
-control_edges_10 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10)]]
-dep_edges_10 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (1, 3), (2, 3), (1, 4), (0, 4), (2, 4), (1, 5), (0, 5), (2, 5),
-                                        (1, 6), (3, 6), (2, 6), (6, 7), (3, 7), (1, 8), (3, 8), (6, 8), (2, 8), (1, 9),
-                                        (3, 9), (6, 9), (2, 9)]]
+control_edges_10 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9),
+                                            (9, 10), (10, 11)]]
+dep_edges_10 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (1, 3), (0, 4), (2, 4), (3, 5), (2, 5), (3, 6), (6, 7), (7, 8),
+                                        (3, 8), (1, 9), (3, 9), (3, 10), (2, 10)]]
 
 parameters_10 = [
     #("x", [0, 1, 2, 3, 4]),
@@ -219,18 +220,15 @@ parameters_10 = [
 
 code_13 = """
 x = X()
-x = X()
 y = Y()
 x.a = y
-y.b = 2
+y.b = X()
 y
 x
-y = Y()
-y
 """
 
-control_edges_13 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9)]]
-dep_edges_13 = [Edge(x, y) for x, y in [(1, 3), (2, 3), (2, 4), (2, 5), (4, 5), (1, 6), (3, 6), (7, 8)]]
+control_edges_13 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]]
+dep_edges_13 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (1, 3), (1, 4), (3, 4), (0, 5), (2, 5)]]
 
 parameters_13 = [
 
@@ -244,7 +242,7 @@ y.b
 """
 
 control_edges_14 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
-dep_edges_14 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (0, 3), (1, 3)]]
+dep_edges_14 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 3)]]
 
 parameters_14 = []
 
@@ -257,7 +255,7 @@ x
 """
 
 control_edges_15 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
-dep_edges_15 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 2), (0, 3), (1, 3), (2, 3)]]
+dep_edges_15 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 3), (2, 3)]]
 
 parameters_15 = []
 
@@ -270,7 +268,7 @@ tmp.a
 """
 
 control_edges_16 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
-dep_edges_16 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 2), (2, 3), (0, 3), (1, 3)]]
+dep_edges_16 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 2), (2, 3), (1, 3)]]
 
 parameters_16 = []
 
@@ -283,7 +281,7 @@ tmp2.a
 """
 
 control_edges_17 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]]
-dep_edges_17 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (1, 3), (0, 3), (2, 3), (1, 4), (0, 4), (2, 4), (3, 4)]]
+dep_edges_17 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (0, 3), (2, 3), (2, 4), (3, 4)]]
 
 parameters_17 = []
 
@@ -296,7 +294,7 @@ tmp
 """
 
 control_edges_18 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
-dep_edges_18 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 2), (2, 3), (1, 3)]]
+dep_edges_18 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3)]]
 
 parameters_18 = []
 
@@ -311,9 +309,25 @@ y.b = Z()
 """
 
 control_edges_19 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]]
-dep_edges_19 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (1, 3), (0, 3), (2, 3), (3, 4), (1, 4), (2, 4), (1, 5), (3, 5), (2, 5)]]
+dep_edges_19 = [Edge(x, y) for x, y in [(1, 2), (0, 2), (2, 3), (3, 4), (1, 5)]]
 
 parameters_19 = []
+
+
+code_20 = """
+x = X()
+y = Y()
+tmp = x
+x.a = y
+y.b = X()
+tmp.a
+x
+"""
+
+control_edges_20 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7)]]
+dep_edges_20 = [Edge(x, y) for x, y in [(0, 2), (1, 3), (0, 3), (1, 4), (2, 5), (4, 5), (3, 5), (0, 6), (3, 6)]]
+
+parameters_20 = []
 
 
 tests = [
@@ -330,7 +344,10 @@ tests = [
     (code_14, control_edges_14, dep_edges_14, parameters_14),
     (code_15, control_edges_15, dep_edges_15, parameters_15),
     (code_16, control_edges_16, dep_edges_16, parameters_16),
-    (code_17, control_edges_17, dep_edges_17, parameters_17)
+    (code_17, control_edges_17, dep_edges_17, parameters_17),
+    (code_18, control_edges_18, dep_edges_18, parameters_18),
+    (code_19, control_edges_19, dep_edges_19, parameters_19),
+    (code_20, control_edges_20, dep_edges_20, parameters_20),
 ]
 
 
