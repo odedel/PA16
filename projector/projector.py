@@ -58,7 +58,8 @@ class GraphBuilder(ast.NodeVisitor):
         self.control_edges = []
         self.last_seen = {}
         self.unknown_vars = {}
-        self.pointing_vars = {}
+        self.var_to_object = {}
+        self.object_to_var = {}
         self._code_line = 0
         super(GraphBuilder, self).__init__()
 
@@ -142,7 +143,6 @@ class GraphBuilder(ast.NodeVisitor):
                 self.last_seen[var] = fixed_locations
             elif var in last_seen_then:
                 self.last_seen[var].extend(last_seen_then[var])
-
             else:
                 self.last_seen[var].extend(last_seen_else[var])
             self.last_seen[var] = list(set(self.last_seen[var]))
@@ -164,9 +164,7 @@ class GraphBuilder(ast.NodeVisitor):
 
     def _create_dep_edge(self, influence_vars, to):
         for var in influence_vars:
-            if var.startswith('#'):     # It's instance and not variable
-                pass
-            elif var in self.last_seen:
+            if var in self.last_seen:
                 for code_line in self.last_seen[var]:
                     edge = Edge(code_line, to)
                     if edge not in self.dep_edges:
@@ -190,44 +188,59 @@ class GraphBuilder(ast.NodeVisitor):
                 if isinstance(inner_disassembly, ast.Name):
                     influence_vars.append(inner_disassembly.id)
         elif isinstance(node.value, ast.Name):
-            influence_vars.append(node.value.id)
-        elif isinstance(node.value, ast.Call):
-            influence_vars.append('#' + node.value.func.id + '#' + str(uuid.uuid4()))
+            value_var = node.value.id
+            if value_var in self.var_to_object:
+                for obj in self.var_to_object[value_var]:
+                    for other_var in self.object_to_var[obj]:
+                        influence_vars.append(other_var)
+                    self.object_to_var[obj].append(target)
+                self.var_to_object[target] = self.var_to_object[value_var]
+            else:
+                influence_vars.append(value_var)
+        elif isinstance(node.value, ast.Call):      # Call to ctor
+            if '#' not in target:
+                obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
+                self.var_to_object[target] = [obj]
+                self.object_to_var[obj] = [target]
+            else:
+                father_target, attribute = target.split('#')
+                influence_vars.append(father_target)
+
+                self.var_to_object[target] = []
+                for obj in self.var_to_object[father_target]:
+                    new_obj = obj + '#' + target.split('#')[1]
+                    self.var_to_object[target].append(new_obj)
+                    self.object_to_var[new_obj] = [target]
         elif isinstance(node.value, ast.Attribute):
             influence_vars.append(node.value.value.id + '#' + node.value.attr)
+            father_target = node.value.value.id
+            for obj in self.var_to_object[father_target]:
+                for other_var in self.object_to_var[obj]:
+                    influence_vars.append(other_var)
 
-        # Find the variables that we passed and influenced by me
-        if isinstance(node, ast.Assign):
-            self.pointing_vars[target] = self._find_actual_object(target, influence_vars)
-            if '#' in target:   # Assign to attribute
-                variable_name = target.split('#')[0]
-                influenced_variables = self._find_variables_that_pointing_to_the_same_object(variable_name)
-                for var in influenced_variables:
-                    for code_line in self.last_seen[var]:
-                        self.dep_edges.append(Edge(from_=self._code_line, to=code_line))
+        # Other references to the influence list
+        for var in influence_vars:
+            if var in self.var_to_object:
+                for obj in self.var_to_object[var]:
+                    for other_var in self.object_to_var[obj]:
+                        if other_var is not target:
+                            if other_var not in influence_vars:
+                                influence_vars.append(other_var)
+                            sons_reference = filter(lambda x: x.find(other_var + '#') > -1, self.last_seen.keys())
+                            for s in sons_reference:
+                                if s not in influence_vars:
+                                    influence_vars.append(s)
+
+        if '#' in target:
+            father_target = target.split('#')[0]
+            if father_target in self.object_to_var:
+                for obj in self.object_to_var[father_target]:
+                    for var in self.object_to_var[obj]:
+                        if var not in influence_vars:
+                            influence_vars.append(var)
 
         self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
-
-    def _find_variables_that_pointing_to_the_same_object(self, variable_name):
-        return_list = []
-        for pointed_object in self.pointing_vars[variable_name]:
-            for var, objects in self.pointing_vars.iteritems():
-                for object_ in objects:
-                    if object_ is pointed_object:
-                        return_list.append(var)
-        return return_list
-
-    def _find_actual_object(self, target, vars):
-        return_list = []
-        for var in vars:
-            if var.startswith('#'):
-                return_list.append(var)
-            elif var in self.pointing_vars:
-                return_list.extend(self._find_actual_object(target, self.pointing_vars[var]))
-            elif var is not target:   # The var is holding an integer value
-                return_list.append(var)
-        return return_list
 
     def _create_condition_dependencies(self, node, code_line=None):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
@@ -352,22 +365,22 @@ def project(original_code):
 
 
 def main():
-    with file(r'tests\test14.py') as f:
-        original_code = f.read()
+    # with file(r'tests\test15.py') as f:
+    #     original_code = f.read()
+    #
+    # project(original_code)
 
-    project(original_code)
-
-#     projected_code = project("""
-# x = 2
-# t = 124
-# counter = 0
-# while t < x:
-#     t = t + 5
-#     x = 2
-#     t = t + 5
-#     counter = counter + 1
-# t
-# """, 'x')
+    projected_code = project("""
+x = X()
+x = X()
+y = Y()
+x.a = y
+y.b = 2
+y
+x
+y = Y()
+y
+""")
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
     # print 'The projected program:'
