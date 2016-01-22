@@ -39,7 +39,7 @@ class StatementNode(Node):
         return '(%s, %s, %s)' % (self.statement, self.assigned_var, self.influence_vars)
 
     def __str__(self):
-        return "%s\t%s%s" % (self.assigned_var.ljust(10), str(self.influence_vars).ljust(20), self.statement)
+        return "%s\t%s%s" % (self.assigned_var.ljust(10), str(self.influence_vars).ljust(50), self.statement)
 
 
 class ControlNode(Node):
@@ -236,12 +236,8 @@ class GraphBuilder(ast.NodeVisitor):
                 tmp_list.append(var)
         influence_vars = influence_vars.difference(set(tmp_list))
 
-        print influence_vars
-
         self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
-
-        print 'Unknown: ', self.unknown_vars
 
         # Update the abstract domain
         if isinstance(node, ast.Assign):    # Need to update the abstract domain
@@ -331,7 +327,7 @@ class GraphBuilder(ast.NodeVisitor):
 
 
 def print_graph_nodes(nodes):
-    print "%s\t%s%s" % ("influenced".ljust(10), "influenced by".ljust(20), "statement")
+    print "%s\t%s%s" % ("influenced".ljust(10), "influenced by".ljust(50), "statement")
     for g in nodes:
         print g
 
@@ -410,15 +406,17 @@ def main():
     projected_code = project("""
 x = X()
 y = Y()
+tmp = x
 x.a = y
-y.b = Z()
-x
+y.b = X()
+tmp.a
 """)
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
     # print 'The projected program:'
     # for i in projected_code:
     #     print i
+
 
 
 if __name__ == '__main__':
