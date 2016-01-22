@@ -187,6 +187,18 @@ class GraphBuilder(ast.NodeVisitor):
             for inner_disassembly in [node.value.right, node.value.left]:
                 if isinstance(inner_disassembly, ast.Name):
                     influence_vars.add(inner_disassembly.id)
+                elif isinstance(inner_disassembly, ast.Attribute):
+                    influence_name = inner_disassembly.value.id
+                    influence_attribute = inner_disassembly.attr
+                    influence_var_with_attribute = influence_name + '#' + influence_attribute
+                    if influence_var_with_attribute in self.last_seen:
+                        influence_vars.add(influence_var_with_attribute)
+                    else:
+                        for var in self._get_vars_that_points_to_the_same_object(influence_name):
+                            other_var_with_attribute = var + '#' + influence_attribute
+                            if other_var_with_attribute in self.last_seen:
+                                influence_vars.add(other_var_with_attribute)
+                                break
         elif isinstance(node.value, ast.Name):
             assigned_var = node.value.id
             influence_vars.add(assigned_var)
@@ -231,7 +243,7 @@ class GraphBuilder(ast.NodeVisitor):
     def _find_attributes_of_the_same_object(self, var_name):
         return_list = []
         for other_var in self._get_vars_that_points_to_the_same_object(var_name) + [var_name]:
-            for tmp_var in self.var_to_object.keys():
+            for tmp_var in self.last_seen.keys():
                 if other_var + '#' in tmp_var and other_var == tmp_var.rsplit('#', 1)[0]:
                     return_list.append(tmp_var)
         return set(return_list)
@@ -377,16 +389,12 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = 5
-y = x + 5
-z = 512
-if x > 3:
-    x = y + 5
-    x = y + z
-    m = x + z
-    y = 123
-h = z + m
-i = x + y
+x = X()
+x.a = 2
+y = Y()
+tmp = y
+tmp.a = 2
+x.a + y.a
 """)
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)

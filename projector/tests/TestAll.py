@@ -330,6 +330,58 @@ dep_edges_20 = [Edge(x, y) for x, y in [(0, 2), (1, 3), (0, 3), (1, 4), (2, 5), 
 parameters_20 = []
 
 
+code_21 = """
+x = X()
+x.a = 2
+y = Y()
+y.a = 2
+x.a + y.a
+"""
+
+control_edges_21 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]]
+dep_edges_21 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (3, 4), (1, 4)]]
+
+parameters_21 = []
+
+code_22 = """
+y = Y()
+tmp = y
+tmp.a = 2
+y
+"""
+
+control_edges_22 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
+dep_edges_22 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 3), (2, 3)]]
+
+parameters_22 = []
+
+code_23 = """
+y = Y()
+tmp = y
+tmp.a = 2
+y.a
+"""
+
+control_edges_23 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4)]]
+dep_edges_23 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (0, 3), (2, 3)]]
+
+parameters_23 = []
+
+
+code_24 = """
+x = X()
+x.a = 2
+y = Y()
+tmp = y
+tmp.a = 2
+x.a + y.a
+"""
+
+control_edges_24 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)] ]
+dep_edges_24 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (3, 4), (4, 5), (1, 5)]]
+
+parameters_24 = []
+
 tests = [
     (code_1, control_edges_1, dep_edges_1, parameters_1),
     (code_3, control_edges_3, dep_edges_3, parameters_3),
@@ -348,6 +400,9 @@ tests = [
     (code_18, control_edges_18, dep_edges_18, parameters_18),
     (code_19, control_edges_19, dep_edges_19, parameters_19),
     (code_20, control_edges_20, dep_edges_20, parameters_20),
+    (code_21, control_edges_21, dep_edges_21, parameters_21),
+    (code_22, control_edges_22, dep_edges_22, parameters_22),
+    (code_23, control_edges_23, dep_edges_23, parameters_23),
 ]
 
 
