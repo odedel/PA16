@@ -202,13 +202,13 @@ class GraphBuilder(ast.NodeVisitor):
         elif isinstance(node.value, ast.Attribute):
             influence_name = node.value.value.id
             influence_attribute = node.value.attr
-            influence_vars.add(influence_name + '#' + influence_attribute)
+            assigned_var = influence_name + '#' + influence_attribute
+            influence_vars.add(assigned_var)
             # Find influencing attributes
             for var in self._get_vars_that_points_to_the_same_object(influence_name):
                 other_var_with_attribute = var + '#' + influence_attribute
                 if other_var_with_attribute in self.last_seen:
                     influence_vars.add(other_var_with_attribute)
-
 
         # If the target is attribute, the object declaration is also influence
         if '#' in target:
@@ -245,14 +245,12 @@ class GraphBuilder(ast.NodeVisitor):
 
         # Update the abstract domain
         if isinstance(node, ast.Assign):    # Need to update the abstract domain
-            if isinstance(node.value, ast.Name):
+            if isinstance(node.value, ast.Name) or isinstance(node.value, ast.Attribute):
                 self._delete_variable_from_abstract_domain(target)
                 self.var_to_object[target] = set()
                 for obj in self.var_to_object[assigned_var]:
                     self.object_to_var[obj].add(target)
                     self.var_to_object[target].add(obj)
-            elif isinstance(node.value, ast.Attribute):
-                pass
 
     def _delete_variable_from_abstract_domain(self, target):
         for var in self.var_to_object.keys():
@@ -413,7 +411,7 @@ def main():
 x = X()
 y = Y()
 x.a = y
-y.b = 2
+y.b = Z()
 x
 """)
 #     create_projected_variable_path(projected_code, "x")
