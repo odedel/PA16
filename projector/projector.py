@@ -190,12 +190,25 @@ class GraphBuilder(ast.NodeVisitor):
         elif isinstance(node.value, ast.Name):
             assigned_var = node.value.id
             influence_vars.add(assigned_var)
+            # Find influencing attributes
+            for other_var in self._get_vars_that_points_to_the_same_object(assigned_var) + [assigned_var]:
+                for tmp_var in self.var_to_object.keys():
+                    if other_var + '#' in tmp_var:
+                        influence_vars.add(tmp_var)
         elif isinstance(node.value, ast.Call):      # Call to ctor
             obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
             self.var_to_object[target] = set([obj])
             self.object_to_var[obj] = set([target])
         elif isinstance(node.value, ast.Attribute):
-            influence_vars.add(node.value.value.id + '#' + node.value.attr)
+            influence_name = node.value.value.id
+            influence_attribute = node.value.attr
+            influence_vars.add(influence_name + '#' + influence_attribute)
+            # Find influencing attributes
+            for var in self._get_vars_that_points_to_the_same_object(influence_name):
+                other_var_with_attribute = var + '#' + influence_attribute
+                if other_var_with_attribute in self.last_seen:
+                    influence_vars.add(other_var_with_attribute)
+
 
         # If the target is attribute, the object declaration is also influence
         if '#' in target:
@@ -210,19 +223,10 @@ class GraphBuilder(ast.NodeVisitor):
         influence_vars = influence_vars.union(set(tmp_list))
 
         # Find all the may influence vars using the abstract domain
-        # Vars
         tmp_list = []
         for var in influence_vars:
             for other_var in self._get_vars_that_points_to_the_same_object(var):
                 tmp_list.append(other_var)
-        influence_vars = influence_vars.union(set(tmp_list))
-        # attributes
-        tmp_list = []
-        for var in influence_vars:
-            for other_var in self._get_vars_that_points_to_the_same_object(var) + [var]:
-                for tmp_var in self.var_to_object.keys():
-                    if other_var + '#' in tmp_var:
-                        tmp_list.append(tmp_var)
         influence_vars = influence_vars.union(set(tmp_list))
 
         # Delete variables that doesn't exists
@@ -240,15 +244,15 @@ class GraphBuilder(ast.NodeVisitor):
         print 'Unknown: ', self.unknown_vars
 
         # Update the abstract domain
-        if isinstance(node.value, ast.Name):
-            assigned_var = node.value.id
-            influence_vars.add(assigned_var)
-            if isinstance(node, ast.Assign):    # Need to update the abstract domain
+        if isinstance(node, ast.Assign):    # Need to update the abstract domain
+            if isinstance(node.value, ast.Name):
                 self._delete_variable_from_abstract_domain(target)
                 self.var_to_object[target] = set()
                 for obj in self.var_to_object[assigned_var]:
                     self.object_to_var[obj].add(target)
                     self.var_to_object[target].add(obj)
+            elif isinstance(node.value, ast.Attribute):
+                pass
 
     def _delete_variable_from_abstract_domain(self, target):
         for var in self.var_to_object.keys():
@@ -407,9 +411,10 @@ def main():
 
     projected_code = project("""
 x = X()
-x.a = X()
-tmp = x
-tmp.a
+y = Y()
+x.a = y
+y.b = 2
+x
 """)
 #     create_projected_variable_path(projected_code, "x")
 #     visualize(projected_code)
