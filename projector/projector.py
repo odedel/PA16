@@ -190,17 +190,17 @@ class GraphBuilder(ast.NodeVisitor):
         elif isinstance(node.value, ast.Name):
             assigned_var = node.value.id
             influence_vars.add(assigned_var)
-            if isinstance(node, ast.Assign):    # Need to update the abstract domain
-                self.var_to_object[target] = set()
-                for obj in self.var_to_object[assigned_var]:
-                    self.object_to_var[obj].add(target)
-                    self.var_to_object[target].add(obj)
         elif isinstance(node.value, ast.Call):      # Call to ctor
             obj = '#' + str(uuid.uuid4()) + '#' + node.value.func.id
             self.var_to_object[target] = set([obj])
             self.object_to_var[obj] = set([target])
         elif isinstance(node.value, ast.Attribute):
             influence_vars.add(node.value.value.id + '#' + node.value.attr)
+
+        # If the target is attribute, the object declaration is also influence
+        if '#' in target:
+            name, attribute = target.split('#')
+            influence_vars.add(name)
 
         tmp_list = []
         for var in influence_vars:
@@ -210,16 +210,60 @@ class GraphBuilder(ast.NodeVisitor):
         influence_vars = influence_vars.union(set(tmp_list))
 
         # Find all the may influence vars using the abstract domain
+        # Vars
         tmp_list = []
         for var in influence_vars:
             for other_var in self._get_vars_that_points_to_the_same_object(var):
                 tmp_list.append(other_var)
         influence_vars = influence_vars.union(set(tmp_list))
+        # attributes
+        tmp_list = []
+        for var in influence_vars:
+            for other_var in self._get_vars_that_points_to_the_same_object(var) + [var]:
+                for tmp_var in self.var_to_object.keys():
+                    if other_var + '#' in tmp_var:
+                        tmp_list.append(tmp_var)
+        influence_vars = influence_vars.union(set(tmp_list))
+
+        # Delete variables that doesn't exists
+        tmp_list = []
+        for var in influence_vars:
+            if var not in self.last_seen:
+                tmp_list.append(var)
+        influence_vars = influence_vars.difference(set(tmp_list))
 
         print influence_vars
 
         self.nodes.append(StatementNode(code, target, influence_vars))
         self._create_dep_edge(influence_vars, self._code_line)
+
+        print 'Unknown: ', self.unknown_vars
+
+        # Update the abstract domain
+        if isinstance(node.value, ast.Name):
+            assigned_var = node.value.id
+            influence_vars.add(assigned_var)
+            if isinstance(node, ast.Assign):    # Need to update the abstract domain
+                self._delete_variable_from_abstract_domain(target)
+                self.var_to_object[target] = set()
+                for obj in self.var_to_object[assigned_var]:
+                    self.object_to_var[obj].add(target)
+                    self.var_to_object[target].add(obj)
+
+    def _delete_variable_from_abstract_domain(self, target):
+        for var in self.var_to_object.keys():
+            if target is var:
+                self._delete_object_to_var_entry(target)
+                self.var_to_object.pop(var)
+            if target + '#' in var:
+                self._delete_object_to_var_entry(var)
+                self.var_to_object.pop(var)
+
+    def _delete_object_to_var_entry(self, target):
+        for obj in self.var_to_object[target]:
+            self.object_to_var[obj].remove(target)
+            if not self.object_to_var[obj]:
+                self.object_to_var.pop(target)
 
     def _get_vars_that_points_to_the_same_object(self, var):
         return_list = []
