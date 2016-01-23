@@ -250,6 +250,8 @@ class GraphBuilder(ast.NodeVisitor):
                     object_name = '@DONT_KNOW@' + assigned_var
                     self.var_to_object[target] = set([object_name])
                     self.object_to_var[object_name] = set([target])
+            elif isinstance(node.value, ast.Num):
+                self.var_to_object[target] = set()
 
     def _find_attributes_of_the_same_object(self, var_name):
         return_list = []
