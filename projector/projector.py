@@ -320,7 +320,7 @@ def print_graph_nodes(nodes):
         print g
 
 
-def create_graph(original_code, indent_level):
+def create_graph(original_code, indent_level=0):
     builder = GraphBuilder(indent_level)
     builder.visit(ast.parse(original_code))
 
@@ -411,7 +411,7 @@ t
 """)
 #     create_projected_variable_path(projected_code, "x")
     OUT_FILE_PATH = r"T:\out.gv"
-    visualize(projected_code, OUT_FILE_PATH)
+    # visualize(projected_code, OUT_FILE_PATH)
     # print 'The projected program:'
     # for i in projected_code:
     #     print i
