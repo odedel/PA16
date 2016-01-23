@@ -392,22 +392,16 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = 2
-t = 124
-counter = 0
-while t < x:
-    t = t + 5
-    x = 2
-    t = t + 5
-    counter = counter + 1
-    if t > x:
-        t = t - counter
-        counter = counter + x
-    else:
-        x = x + 100
-        counter = counter - 1
-        t = counter + x
-t
+a = 1
+b = 2
+x = X()
+y = Y()
+z = Z()
+if a > b:
+    x.a = y
+else:
+    x.a = z
+x.a
 """)
 #     create_projected_variable_path(projected_code, "x")
     OUT_FILE_PATH = r"T:\out.gv"
