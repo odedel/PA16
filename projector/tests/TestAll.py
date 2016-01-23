@@ -377,10 +377,29 @@ tmp.a = 2
 x.a + y.a
 """
 
-control_edges_24 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)] ]
+control_edges_24 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]]
 dep_edges_24 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (3, 4), (4, 5), (1, 5)]]
 
 parameters_24 = []
+
+
+code_25 = """
+a = 1
+b = 2
+x = X()
+y = Y()
+z = Z()
+if a > b:
+    x.a = y
+else:
+    x.a = z
+x.a
+"""
+
+control_edges_25 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 9), (5, 8), (8, 9), (9, 10)]]
+dep_edges_25 = [Edge(x, y) for x, y in [(0, 5), (1, 5), (3, 6), (2, 6), (2, 8), (4, 8), (8, 9), (6, 9)]]
+
+parameters_25 = []
 
 tests = [
     (code_1, control_edges_1, dep_edges_1, parameters_1),
