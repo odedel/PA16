@@ -294,10 +294,39 @@ class GraphBuilder(ast.NodeVisitor):
         self._merge_edges(self.dep_edges, inner_graph.dep_edges)
         self._fix_inner_code_lines(inner_graph.last_seen)
         self._find_unknown_variables(inner_graph.unknown_vars)
+        self._merge_objects(inner_graph.object_to_var, inner_graph.var_to_object)
 
         self._code_line += inner_graph.code_length
 
         return inner_graph.last_seen, inner_graph.code_length
+
+    def _merge_objects(self, inner_objects_to_var, inner_var_to_objects):
+        for obj, vars in inner_objects_to_var.iteritems():
+            if '@' not in obj:  # Created new object in the inner code
+                self.object_to_var[obj] = inner_objects_to_var[obj]
+            else:   # Reference to object from outside
+                var_name = obj.rsplit('@')[-1]
+                if var_name in self.var_to_object:
+                    for found_object in self.var_to_object[var_name]:
+                        self.object_to_var[found_object] = self.object_to_var[found_object].union(vars)
+                else:   # We don't know this object either
+                    self.object_to_var[obj] = vars
+
+        for var, objects in inner_var_to_objects.iteritems():
+            if var not in self.var_to_object:
+                self.var_to_object[var] = set()
+            for obj in objects:
+                if '@' not in obj:  # Created new object in the inner code
+                    self.var_to_object[var].add(obj)
+                else:
+                    var_name = obj.rsplit('@')[-1]
+                    if var_name in self.var_to_object:
+                        correct_objects = self.var_to_object[var_name]
+                        for c_obj in correct_objects:
+                            self.var_to_object[var].add(c_obj)
+                            self.object_to_var[c_obj].add(var)
+                    else:
+                        self.var_to_object[var].add(obj)
 
     def _find_unknown_variables(self, unknown_vars, reference_code_line=None):
         self._fix_inner_code_lines(unknown_vars, reference_code_line)
