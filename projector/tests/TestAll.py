@@ -382,10 +382,154 @@ tmp.a = 2
 x.a + y.a
 """
 
-control_edges_24 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)] ]
+control_edges_24 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]]
 dep_edges_24 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (3, 4), (4, 5), (1, 5)]]
 
 parameters_24 = []
+
+
+code_25 = """
+a = 1
+b = 2
+x = X()
+y = Y()
+z = Z()
+if a > b:
+    x.a = y
+else:
+    x.a = z
+x.a
+"""
+
+control_edges_25 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 9), (5, 8), (8, 9), (9, 10)]]
+dep_edges_25 = [Edge(x, y) for x, y in [(0, 5), (1, 5), (3, 6), (2, 6), (2, 8), (4, 8), (8, 9), (6, 9)]]
+
+parameters_25 = []
+
+
+code_26 = """
+x = X()
+x.a = X()
+x.b = X()
+if x.a > x.b:
+    tmp = x.a
+else:
+    tmp = x.b
+tmp
+"""
+
+control_edges_26 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 7), (3, 6), (6, 7), (7, 8)]]
+dep_edges_26 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 3), (2, 3), (1, 4), (2, 6), (4, 7), (6, 7)]]
+
+parameters_26 = []
+
+code_27 = """
+x = X()
+x.a = X()
+x.b = X()
+if x.a > x.b:
+    tmp = x.a
+else:
+    tmp = x.b
+tmp
+"""
+
+control_edges_27 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 7), (3, 6), (6, 7), (7, 8)]]
+dep_edges_27 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 3), (2, 3), (1, 4), (2, 6), (4, 7), (6, 7)]]
+
+parameters_27 = []
+
+
+code_28 = """
+x = X()
+tmp = x
+if x > x:
+    tmp.a = X()
+else:
+    tmp.a = X()
+x.a
+"""
+
+control_edges_28 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 6), (2, 5), (5, 6), (6, 7)]]
+dep_edges_28 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 3), (1, 5), (0, 6), (3, 6), (5, 6)]]
+
+parameters_28 = []
+
+
+code_29 = """
+x = X()
+if x > x:
+    tmp = x
+    tmp.a = X()
+else:
+    tmp = x
+    tmp.a = X()
+x.a
+"""
+
+control_edges_29 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 7), (1, 5), (5, 6), (6, 7), (7, 8)]]
+dep_edges_29 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (0, 2), (5, 6), (0, 5), (0, 7), (3, 7), (6, 7)] ]
+
+parameters_29 = []
+
+
+code_30 = """
+x = X()
+if x > x:
+    x.a = X()
+else:
+    x.a = X()
+tmp = x
+tmp.a
+"""
+
+control_edges_30 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 5), (1, 4), (4, 5), (5, 6), (6, 7)]]
+dep_edges_30 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (0, 4), (0, 5), (2, 5), (4, 5), (5, 6), (2, 6), (4, 6)]]
+
+parameters_30 = []
+
+
+code_32 = """
+x = X()
+y = Y()
+z = Z()
+if x > x:
+    x.a = y
+    x.b = z
+    x.c = C()
+else:
+    x.a = z
+    x.b = y
+    x.c = c()
+tmp = x
+x.b
+tmp.b
+"""
+
+control_edges_32 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 11), (3, 8), (8, 9),
+                                            (9, 10), (10, 11), (11, 12), (12, 13), (13, 14)]]
+dep_edges_32 = [Edge(x, y) for x, y in [(0, 3), (1, 4), (0, 4), (0, 5), (0, 6), (2, 5), (1, 9), (0, 8), (0, 9), (0, 10),
+                                        (2, 8), (9, 11), (5, 11), (0, 11), (8, 11), (4, 11), (10, 11), (6, 11), (9, 12),
+                                        (5, 12), (11, 13), (9, 13), (5, 13)]]
+
+parameters_32 = []
+
+
+code_33 = """
+x = X()
+if x > x:
+    tmp = x
+    tmp.a = X()
+    x.b = x.a
+else:
+    x.c = 3
+x
+"""
+
+control_edges_33 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 7), (1, 6), (6, 7), (7, 8)]]
+dep_edges_33 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (3, 4), (0, 2), (0, 4), (0, 6), (4, 7), (0, 7), (3, 7), (6, 7)]]
+
+parameters_33 = []
 
 tests = [
     (code_1, control_edges_1, dep_edges_1, parameters_1),
@@ -409,6 +553,14 @@ tests = [
     (code_22, control_edges_22, dep_edges_22, parameters_22),
     (code_23, control_edges_23, dep_edges_23, parameters_23),
     (code_24, control_edges_24, dep_edges_24, parameters_24),
+    (code_25, control_edges_25, dep_edges_25, parameters_25),
+    (code_26, control_edges_26, dep_edges_26, parameters_26),
+    (code_27, control_edges_27, dep_edges_27, parameters_27),
+    (code_28, control_edges_28, dep_edges_28, parameters_28),
+    (code_29, control_edges_29, dep_edges_29, parameters_29),
+    (code_30, control_edges_30, dep_edges_30, parameters_30),
+    (code_32, control_edges_32, dep_edges_32, parameters_32),
+    (code_33, control_edges_33, dep_edges_33, parameters_33),
 ]
 
 

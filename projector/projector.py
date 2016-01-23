@@ -218,13 +218,17 @@ class GraphBuilder(ast.NodeVisitor):
                 influence_vars.add(assigned_var)
                 influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(assigned_var))
             else:
-                influence_vars.add(influence_name)      # Add the assignment to other variable
-                for var in self._get_vars_that_points_to_the_same_object(influence_name):   # Search for corresponding attribute
-                    other_var_with_attribute = var + '#' + influence_attribute
-                    if other_var_with_attribute in self.last_seen:
-                        influence_vars.add(other_var_with_attribute)
-                        influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(other_var_with_attribute))
-                        break
+                vars_pointing_to_the_same_element = self._get_vars_that_points_to_the_same_object(influence_name)
+                if not vars_pointing_to_the_same_element:   # We don't know this pointing, maybe it's from higher level
+                    influence_vars.add(assigned_var)
+                else:
+                    influence_vars.add(influence_name)      # Add the assignment to other variable
+                    for var in vars_pointing_to_the_same_element:   # Search for corresponding attribute
+                        other_var_with_attribute = var + '#' + influence_attribute
+                        if other_var_with_attribute in self.last_seen:
+                            influence_vars.add(other_var_with_attribute)
+                            influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(other_var_with_attribute))
+                            break
 
         # If the target is attribute, the object declaration is also influence
         if '#' in target:
@@ -242,6 +246,12 @@ class GraphBuilder(ast.NodeVisitor):
                     for obj in self.var_to_object[assigned_var]:
                         self.object_to_var[obj].add(target)
                         self.var_to_object[target].add(obj)
+                elif assigned_var not in self.last_seen:   # We don't know the assigned object it probably from higher level
+                    object_name = '@DONT_KNOW@' + assigned_var
+                    self.var_to_object[target] = set([object_name])
+                    self.object_to_var[object_name] = set([target])
+            elif isinstance(node.value, ast.Num):
+                self.var_to_object[target] = set()
 
     def _find_attributes_of_the_same_object(self, var_name):
         return_list = []
@@ -253,6 +263,11 @@ class GraphBuilder(ast.NodeVisitor):
 
     def _get_vars_that_points_to_the_same_object(self, var):
         return_list = []
+
+        for obj in self.object_to_var:
+            if '@DONT_KNOW@' + var == obj:
+                return list(self.object_to_var[obj])
+
         if var in self.var_to_object:
             for obj in self.var_to_object[var]:
                 for other_var in self.object_to_var[obj]:
@@ -269,6 +284,8 @@ class GraphBuilder(ast.NodeVisitor):
         for tested in [node.test.left, node.test.comparators[0]]:
             if isinstance(tested, ast.Name):
                 checked_vars.append(tested.id)
+            elif isinstance(tested, ast.Attribute):
+                checked_vars.append(tested.value.id + '#' + tested.attr)
         self._create_dep_edge(checked_vars, self._code_line if not code_line else code_line)
         self.nodes.append(ControlNode(code, checked_vars, self.indent_level))
 
@@ -284,10 +301,39 @@ class GraphBuilder(ast.NodeVisitor):
         self._merge_edges(self.dep_edges, inner_graph.dep_edges)
         self._fix_inner_code_lines(inner_graph.last_seen)
         self._find_unknown_variables(inner_graph.unknown_vars)
+        self._merge_objects(inner_graph.object_to_var, inner_graph.var_to_object)
 
         self._code_line += inner_graph.code_length
 
         return inner_graph.last_seen, inner_graph.code_length
+
+    def _merge_objects(self, inner_objects_to_var, inner_var_to_objects):
+        for obj, vars in inner_objects_to_var.iteritems():
+            if '@' not in obj:  # Created new object in the inner code
+                self.object_to_var[obj] = inner_objects_to_var[obj]
+            else:   # Reference to object from outside
+                var_name = obj.rsplit('@')[-1]
+                if var_name in self.var_to_object:
+                    for found_object in self.var_to_object[var_name]:
+                        self.object_to_var[found_object] = self.object_to_var[found_object].union(vars)
+                else:   # We don't know this object either
+                    self.object_to_var[obj] = vars
+
+        for var, objects in inner_var_to_objects.iteritems():
+            if var not in self.var_to_object:
+                self.var_to_object[var] = set()
+            for obj in objects:
+                if '@' not in obj:  # Created new object in the inner code
+                    self.var_to_object[var].add(obj)
+                else:
+                    var_name = obj.rsplit('@')[-1]
+                    if var_name in self.var_to_object:
+                        correct_objects = self.var_to_object[var_name]
+                        for c_obj in correct_objects:
+                            self.var_to_object[var].add(c_obj)
+                            self.object_to_var[c_obj].add(var)
+                    else:
+                        self.var_to_object[var].add(obj)
 
     def _find_unknown_variables(self, unknown_vars, reference_code_line=None):
         self._fix_inner_code_lines(unknown_vars, reference_code_line)
@@ -315,9 +361,9 @@ class GraphBuilder(ast.NodeVisitor):
 
 
 def print_graph_nodes(nodes):
-    print "%s\t%s%s" % ("influenced".ljust(10), "influenced by".ljust(50), "statement")
-    for g in nodes:
-        print g
+    print "%s\t%s\t%s%s" % ("#line".ljust(10), "influenced".ljust(10), "influenced by".ljust(50), "statement")
+    for index, g in enumerate(nodes):
+        print str(index).ljust(10), g
 
 
 def create_graph(original_code, indent_level=0):
@@ -392,22 +438,19 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = 2
-t = 124
-counter = 0
-while t < x:
-    t = t + 5
-    x = 2
-    t = t + 5
-    counter = counter + 1
-    if t > x:
-        t = t - counter
-        counter = counter + x
+x = 5
+y = 7
+if x > y:
+    h = x + 5
+    if h > y:
+        m = h
     else:
-        x = x + 100
-        counter = counter - 1
-        t = counter + x
-t
+        m = y
+else:
+    h = y + 5
+    if h > x:
+        m = h
+h
 """)
 #     create_projected_variable_path(projected_code, "x")
     OUT_FILE_PATH = r"T:\out.gv"
