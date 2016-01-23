@@ -593,6 +593,20 @@ dep_edges_37 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 3), (0, 4), (3, 4)]]
 parameters_37 = []
 
 
+code_38 = """
+x = X()
+tmp = x
+tmp2 = x
+tmp.a = X()
+tmp2.a
+"""
+
+control_edges_38 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]]
+dep_edges_38 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (1, 3), (3, 4), (2, 4)]]
+
+parameters_38 = []
+
+
 tests = [
     (code_1, control_edges_1, dep_edges_1, parameters_1),
     (code_3, control_edges_3, dep_edges_3, parameters_3),
@@ -627,6 +641,7 @@ tests = [
     (code_35, control_edges_35, dep_edges_35, parameters_35),
     (code_36, control_edges_36, dep_edges_36, parameters_36),
     (code_37, control_edges_37, dep_edges_37, parameters_37),
+    (code_38, control_edges_38, dep_edges_38, parameters_38),
 ]
 
 
