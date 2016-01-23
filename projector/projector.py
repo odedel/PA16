@@ -269,6 +269,8 @@ class GraphBuilder(ast.NodeVisitor):
         for tested in [node.test.left, node.test.comparators[0]]:
             if isinstance(tested, ast.Name):
                 checked_vars.append(tested.id)
+            elif isinstance(tested, ast.Attribute):
+                checked_vars.append(tested.value.id + '#' + tested.attr)
         self._create_dep_edge(checked_vars, self._code_line if not code_line else code_line)
         self.nodes.append(ControlNode(code, checked_vars, self.indent_level))
 
