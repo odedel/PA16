@@ -264,7 +264,7 @@ class GraphBuilder(ast.NodeVisitor):
 
         for obj in self.object_to_var:
             if '@DONT_KNOW@' + var == obj:
-                return self.object_to_var[obj]
+                return list(self.object_to_var[obj])
 
         if var in self.var_to_object:
             for obj in self.var_to_object[var]:
