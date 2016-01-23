@@ -261,6 +261,11 @@ class GraphBuilder(ast.NodeVisitor):
 
     def _get_vars_that_points_to_the_same_object(self, var):
         return_list = []
+
+        for obj in self.object_to_var:
+            if '@DONT_KNOW@' + var == obj:
+                return self.object_to_var[obj]
+
         if var in self.var_to_object:
             for obj in self.var_to_object[var]:
                 for other_var in self.object_to_var[obj]:
@@ -431,14 +436,19 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = X()
-x.a = X()
-x.b = X()
-if x.a > x.b:
-    tmp = x.a
+x = 5
+y = 7
+if x > y:
+    h = x + 5
+    if h > y:
+        m = h
+    else:
+        m = y
 else:
-    tmp = x.b
-tmp
+    h = y + 5
+    if h > x:
+        m = h
+h
 """)
 #     create_projected_variable_path(projected_code, "x")
     OUT_FILE_PATH = r"T:\out.gv"
