@@ -246,6 +246,10 @@ class GraphBuilder(ast.NodeVisitor):
                     for obj in self.var_to_object[assigned_var]:
                         self.object_to_var[obj].add(target)
                         self.var_to_object[target].add(obj)
+                elif assigned_var not in self.last_seen:   # We don't know the assigned object it probably from higher level
+                    object_name = '@DONT_KNOW@' + assigned_var
+                    self.var_to_object[target] = set([object_name])
+                    self.object_to_var[object_name] = set([target])
 
     def _find_attributes_of_the_same_object(self, var_name):
         return_list = []
