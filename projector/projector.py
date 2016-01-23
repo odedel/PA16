@@ -230,6 +230,10 @@ class GraphBuilder(ast.NodeVisitor):
                             influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(other_var_with_attribute))
                             break
 
+        # if isinstance(node, ast.Expr):
+        #     if isinstance(node.value, ast.Attribute) or isinstance(node.value, ast.Name):
+        #         influence_vars = influence_vars.union(set(self._get_vars_that_points_to_the_same_object(assigned_var)))
+
         # If the target is attribute, the object declaration is also influence
         if '#' in target:
             name, attribute = target.split('#')
@@ -272,6 +276,13 @@ class GraphBuilder(ast.NodeVisitor):
             for obj in self.var_to_object[var]:
                 for other_var in self.object_to_var[obj]:
                     return_list.append(other_var)
+
+        # if '#' in var:
+        #     name, attr = var.split('#')
+        #     for other_var in self._get_vars_that_points_to_the_same_object(name):
+        #         possible_match = other_var + '#' + attr
+        #         if possible_match in self.last_seen:
+        #             return_list.append(possible_match)
 
         while var in return_list:
             return_list.remove(var)
@@ -441,22 +452,11 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = 2
-t = 124
-counter = 0
-while t < x:
-    t = t + 5
-    x = 2
-    t = t + 5
-    counter = counter + 1
-    if t > x:
-        t = t - counter
-        counter = counter + x
-    else:
-        x = x + 100
-        counter = counter - 1
-        t = counter + x
-t
+x = X()
+x.a = X()
+tmp = x.a
+tmp.c = 3
+x.a
 """)
 #     create_projected_variable_path(projected_code, "x")
     OUT_FILE_PATH = r"T:\out.gv"
