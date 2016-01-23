@@ -483,6 +483,32 @@ dep_edges_30 = [Edge(x, y) for x, y in [(0, 1), (0, 2), (0, 4), (0, 5), (2, 5), 
 
 parameters_30 = []
 
+
+code_32 = """
+x = X()
+y = Y()
+z = Z()
+if x > x:
+    x.a = y
+    x.b = z
+    x.c = C()
+else:
+    x.a = z
+    x.b = y
+    x.c = c()
+tmp = x
+x.b
+tmp.b
+"""
+
+control_edges_32 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 11), (3, 8), (8, 9),
+                                            (9, 10), (10, 11), (11, 12), (12, 13), (13, 14)]]
+dep_edges_32 = [Edge(x, y) for x, y in [(0, 3), (1, 4), (0, 4), (0, 5), (0, 6), (2, 5), (1, 9), (0, 8), (0, 9), (0, 10),
+                                        (2, 8), (9, 11), (5, 11), (0, 11), (8, 11), (4, 11), (10, 11), (6, 11), (9, 12),
+                                        (5, 12), (11, 13), (9, 13), (5, 13)]]
+
+parameters_32 = []
+
 tests = [
     (code_1, control_edges_1, dep_edges_1, parameters_1),
     (code_3, control_edges_3, dep_edges_3, parameters_3),
@@ -510,6 +536,8 @@ tests = [
     (code_27, control_edges_27, dep_edges_27, parameters_27),
     (code_28, control_edges_28, dep_edges_28, parameters_28),
     (code_29, control_edges_29, dep_edges_29, parameters_29),
+    (code_30, control_edges_30, dep_edges_30, parameters_30),
+    (code_32, control_edges_32, dep_edges_32, parameters_32),
 ]
 
 
