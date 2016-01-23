@@ -105,7 +105,7 @@ class GraphBuilder(ast.NodeVisitor):
         self.control_edges.append(Edge(block_starting_line, self._code_line + 1, jmp_true=True))
 
         # First iteration
-        self._create_condition_dependencies(node)
+        control_node = self._create_condition_dependencies(node)
         last_seen_inner, loop_code_length = self._build_and_merge_inner_graph(node.body)
         self._merge_last_seen(last_seen_inner, {})
 
@@ -115,14 +115,14 @@ class GraphBuilder(ast.NodeVisitor):
             code += astor.codegen.to_source(statement) + os.linesep
         inner_graph = create_graph(code, self.indent_level + 1)
         self._find_unknown_variables(inner_graph.unknown_vars, block_starting_line)
-        self._create_condition_dependencies(node, block_starting_line)
+        self._create_condition_dependencies(node, block_starting_line, control_node)
         self._fix_inner_code_lines(inner_graph.last_seen, block_starting_line)
         self._merge_last_seen(inner_graph.last_seen, {})
 
         # Add and Fix edges
         self._fix_control_edges_that_point_to_the_end_of_block(block_starting_line, block_starting_line + inner_graph.code_length, block_starting_line)
 
-        self.control_edges.append(Edge(block_starting_line + loop_code_length, block_starting_line))
+        # self.control_edges.append(Edge(block_starting_line + loop_code_length, block_starting_line))
         self.control_edges.append(Edge(block_starting_line, block_starting_line + loop_code_length + 1))
 
         self._code_line += 1
@@ -278,7 +278,7 @@ class GraphBuilder(ast.NodeVisitor):
 
         return return_list
 
-    def _create_condition_dependencies(self, node, code_line=None):
+    def _create_condition_dependencies(self, node, code_line=None, control_node=None):
         code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
         checked_vars = []
         for tested in [node.test.left, node.test.comparators[0]]:
@@ -287,7 +287,10 @@ class GraphBuilder(ast.NodeVisitor):
             elif isinstance(tested, ast.Attribute):
                 checked_vars.append(tested.value.id + '#' + tested.attr)
         self._create_dep_edge(checked_vars, self._code_line if not code_line else code_line)
-        self.nodes.append(ControlNode(code, checked_vars, self.indent_level))
+        if not control_node:
+            control_node = ControlNode(code, checked_vars, self.indent_level)
+            self.nodes.append(control_node)
+        return control_node
 
     def _build_and_merge_inner_graph(self, body):
         code = ''
@@ -438,19 +441,22 @@ def main():
     # project(original_code)
 
     projected_code = project("""
-x = 5
-y = 7
-if x > y:
-    h = x + 5
-    if h > y:
-        m = h
+x = 2
+t = 124
+counter = 0
+while t < x:
+    t = t + 5
+    x = 2
+    t = t + 5
+    counter = counter + 1
+    if t > x:
+        t = t - counter
+        counter = counter + x
     else:
-        m = y
-else:
-    h = y + 5
-    if h > x:
-        m = h
-h
+        x = x + 100
+        counter = counter - 1
+        t = counter + x
+t
 """)
 #     create_projected_variable_path(projected_code, "x")
     OUT_FILE_PATH = r"T:\out.gv"
