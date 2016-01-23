@@ -218,13 +218,17 @@ class GraphBuilder(ast.NodeVisitor):
                 influence_vars.add(assigned_var)
                 influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(assigned_var))
             else:
-                influence_vars.add(influence_name)      # Add the assignment to other variable
-                for var in self._get_vars_that_points_to_the_same_object(influence_name):   # Search for corresponding attribute
-                    other_var_with_attribute = var + '#' + influence_attribute
-                    if other_var_with_attribute in self.last_seen:
-                        influence_vars.add(other_var_with_attribute)
-                        influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(other_var_with_attribute))
-                        break
+                vars_pointing_to_the_same_element = self._get_vars_that_points_to_the_same_object(influence_name)
+                if not vars_pointing_to_the_same_element:   # We don't know this pointing, maybe it's from higher level
+                    influence_vars.add(assigned_var)
+                else:
+                    influence_vars.add(influence_name)      # Add the assignment to other variable
+                    for var in vars_pointing_to_the_same_element:   # Search for corresponding attribute
+                        other_var_with_attribute = var + '#' + influence_attribute
+                        if other_var_with_attribute in self.last_seen:
+                            influence_vars.add(other_var_with_attribute)
+                            influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(other_var_with_attribute))
+                            break
 
         # If the target is attribute, the object declaration is also influence
         if '#' in target:
