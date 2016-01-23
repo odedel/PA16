@@ -348,7 +348,7 @@ def create_projected_variable_path(program_graph, projected_variable):
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
         g = program_graph.nodes[pos]
-        if (isinstance(g, StatementNode) and g.assigned_var is projected_variable) or pos in required:
+        if (isinstance(g, StatementNode) and g.assigned_var.split("#")[0] == projected_variable) or pos in required:
             required.add(pos)
 
             if pos in r_control_map:
