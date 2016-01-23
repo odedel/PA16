@@ -354,9 +354,9 @@ class GraphBuilder(ast.NodeVisitor):
 
 
 def print_graph_nodes(nodes):
-    print "%s\t%s%s" % ("influenced".ljust(10), "influenced by".ljust(50), "statement")
-    for g in nodes:
-        print g
+    print "%s\t%s\t%s%s" % ("#line".ljust(10), "influenced".ljust(10), "influenced by".ljust(50), "statement")
+    for index, g in enumerate(nodes):
+        print str(index).ljust(10), g
 
 
 def create_graph(original_code, indent_level=0):
