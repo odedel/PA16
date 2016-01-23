@@ -403,6 +403,7 @@ tests = [
     (code_21, control_edges_21, dep_edges_21, parameters_21),
     (code_22, control_edges_22, dep_edges_22, parameters_22),
     (code_23, control_edges_23, dep_edges_23, parameters_23),
+    (code_24, control_edges_24, dep_edges_24, parameters_24),
 ]
 
 
