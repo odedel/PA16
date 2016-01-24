@@ -486,7 +486,6 @@ def output_analysis_result(graph, output_directory):
 
 
 def output_code(graph, relevant_nodes, output_dir):
-    # else_nodes = []
     with file(output_dir + os.path.sep + 'projected_code.py', 'w') as f:
         for node_number in relevant_nodes:
             if isinstance(graph.nodes[node_number-1], ControlNode) and graph.nodes[node_number-1].statement == 'else:':
