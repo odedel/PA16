@@ -1,5 +1,6 @@
 import ast
 import os
+import sys
 import uuid
 import astor
 
@@ -50,7 +51,7 @@ class ControlNode(Node):
         self.indent = indent
 
     def __str__(self):
-        return "%s\t\t%s" % (str(self.checked_vars).ljust(20), self.statement)
+        return "%s\t%s" % (str(self.checked_vars).ljust(20), self.statement)
 
 
 class GraphBuilder(ast.NodeVisitor):
@@ -374,12 +375,6 @@ class GraphBuilder(ast.NodeVisitor):
             outer_edges.append(Edge(edge.from_ + self._code_line + 1, edge.to + self._code_line + 1, edge.jmp_true))
 
 
-def print_graph_nodes(nodes):
-    print "%s\t%s\t%s%s" % ("#line".ljust(10), "influenced".ljust(10), "influenced by".ljust(50), "statement")
-    for index, g in enumerate(nodes):
-        print str(index).ljust(10), g
-
-
 def create_graph(original_code, indent_level=0):
     builder = GraphBuilder(indent_level)
     builder.visit(ast.parse(original_code))
@@ -471,35 +466,46 @@ def build_program(program_graph, projected_path):
     return program
 
 
-def project(original_code):
-    program_graph = create_graph(original_code, 0)
+def output_analysis_result(graph, output_directory):
+    from tabulate import tabulate
+    headers = ['#line', 'assigned variable', 'influence variables', 'statement']
+    table = []
+    for index, node in enumerate(graph.nodes):
+        if isinstance(node, StatementNode):
+            table.append([index, node.assigned_var, node.influence_vars, node.statement])
+        else:
+            table.append([index, None, node.checked_vars, node.statement])
+    with file(output_directory + os.sep + 'analysis_result.txt', 'w') as f:
+        f.write(tabulate(table, headers, tablefmt="grid"))
+        f.write(os.linesep)
+        f.write('Control Edges: ' + str(graph.control_edges) + os.linesep)
+        f.write('Dependency Edges: ' + str(graph.dep_edges))
 
-    print_graph_nodes(program_graph.nodes)
-    print os.linesep, 'Control Edges: ', program_graph.control_edges, os.linesep
-    print os.linesep, 'Dep Edges: ', program_graph.dep_edges, os.linesep
-    return program_graph
+
+def output_code(graph, relevant_nodes, output_dir):
+    with file(output_dir + os.path.sep + 'projected_code.py', 'w') as f:
+        for node_number in relevant_nodes:
+            f.write('\t'*graph.nodes[node_number].indent + graph.nodes[node_number].statement + '\n')
 
 
 def main():
-    # with file(r'tests\test15.py') as f:
-    #     original_code = f.read()
-    #
-    # project(original_code)
+    if len(sys.argv) != 4:
+        raise RuntimeError('Illegal number of arguments.' + os.linesep +
+                           'Execution line should be: python projector.py <code_file> <output_dir> <projected_variable>')
+    code_file = sys.argv[1]
+    output_directory = sys.argv[2]
+    projected_variable = sys.argv[3]
 
-    projected_code = project("""
-x = X()
-x.a = X()
-tmp = x.a
-tmp.c = 3
-x.a
-""")
-    create_projected_variable_path(projected_code, "y")
-    OUT_FILE_PATH = r"T:\out.gv"
-    # visualize(projected_code, OUT_FILE_PATH)
-    # print 'The projected program:'
-    # for i in projected_code:
-    #     print i
+    with file(code_file) as f:
+        code = f.read()
 
+    graph = create_graph(code)
+    output_analysis_result(graph, output_directory)
+
+    visualize(graph, output_directory + os.path.sep + 'out.gv')
+
+    relevant_nodes = create_projected_variable_path(graph, projected_variable)
+    output_code(graph, relevant_nodes, output_directory)
 
 
 if __name__ == '__main__':

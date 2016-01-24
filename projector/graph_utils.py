@@ -67,7 +67,7 @@ def visualize_edges(graph, out_file, control_edges, dep_edges):
                 # x_node = pydot.Node("Node B", style="filled", fillcolor="green")
                 if x not in known_nodes:
                     dot.node(str(x), nodes[x].statement, color="black", pos="%d,%d" % (nodes[x].indent * indent_len, get_height(x)))
-                print nodes[x].statement
+                # print nodes[x].statement
                 if y < len(nodes):
                     if y not in known_nodes:
                         dot.node(str(y), nodes[y].statement, pos="%d,%d" % (nodes[y].indent * indent_len, get_height(y)))
