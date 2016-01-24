@@ -442,7 +442,10 @@ def create_projected_variable_path(code, projected_variable):
             while prev is not 0:
                 l = prev
                 for prev in l:
-                    if len(control_map[prev]) > 1:
+                    if len(control_map[prev]) == 2:
+                        low = control_map[prev][0]
+                        high = control_map[prev][1]
+                        if low <= pos and pos < high:
                         r.add(prev)
                         r = r.union(dep_map[prev])
                     if prev not in r_control_map:
