@@ -688,7 +688,7 @@ def compare_lists(l1, l2):
         assert sl1[i] == sl2[i], "arrays differ at location %d [%s] - [%s]" % (i, sl1, sl2)
 
 
-@pytest.mark.parametrize("code, control_edges, dep_edges, parameters", tests)
+@pytest.mark.parametrize("code, control_edges, dep_edges, parameters", tests, ids=[str(x) for x in xrange(len(tests))])
 def test_var(code, control_edges, dep_edges, parameters):
     graph = create_graph(code)
     compare_lists(graph.control_edges, control_edges)
