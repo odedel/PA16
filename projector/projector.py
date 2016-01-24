@@ -331,6 +331,7 @@ def create_projected_variable_path(program_graph, projected_variable):
     dep_map = {}
     control_map = {}
     r_control_map = {}
+    r_dep_map = {}
     required = set()
     for edge in program_graph.dep_edges:
         if edge.to not in dep_map:
@@ -345,26 +346,60 @@ def create_projected_variable_path(program_graph, projected_variable):
             if edge.to not in r_control_map:
                 r_control_map[edge.to] = []
             r_control_map[edge.to].append(edge.from_)
+    for edge in program_graph.dep_edges:
+        if edge.from_ not in r_dep_map:
+            r_dep_map[edge.from_] = []
+        r_dep_map[edge.from_].append(edge.to)
+
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
         g = program_graph.nodes[pos]
-        if (isinstance(g, StatementNode) and g.assigned_var.split("#")[0] == projected_variable) or pos in required:
-            required.add(pos)
+        if isinstance(g, StatementNode) and g.assigned_var.split("#")[0] == projected_variable:
+            r = set()
+            r.add(pos)
+            post_len = 0
+            pre_len = 1
 
-            if pos in r_control_map:
-                prev = r_control_map[pos]
+            #add reverse dependencies
+            while pre_len != post_len:
+                pre_len = len(r)
+                for i in r:
+                    if i in r_dep_map:
+                        r = r.union(r_dep_map[i])
+                post_len = len(r)
+            required = required.union(r)
 
-                while prev is not 0:
-                    l = prev
-                    for prev in l:
-                        if len(control_map[prev]) > 1:
-                            required.add(prev)
-                            required = required.union(dep_map[prev])
-                        if prev not in r_control_map:
-                            break
-                        prev = r_control_map[prev]
-                if pos in dep_map:
-                    required = required.union(dep_map[pos])
+            #add dependencies
+            r = set()
+            r.add(pos)
+            post_len = 0
+            pre_len = 1
+            while pre_len != post_len:
+                pre_len = len(r)
+                for i in r:
+                    if i in dep_map:
+                        r = r.union(dep_map[i])
+                post_len = len(r)
+            required = required.union(r)
+
+            #add every branch on the way to the node
+
+    r = set()
+    for pos in required:
+        if pos in r_control_map:
+            prev = r_control_map[pos]
+
+            while prev is not 0:
+                l = prev
+                for prev in l:
+                    if len(control_map[prev]) > 1:
+                        r.add(prev)
+                        r = r.union(dep_map[prev])
+                    if prev not in r_control_map:
+                        break
+                    prev = r_control_map[prev]
+    required = required.union(r)
+
     required = list(required)
     return sorted(required)
 
