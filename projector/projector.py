@@ -385,7 +385,8 @@ def create_graph(original_code, indent_level=0):
     return builder
 
 
-def create_projected_variable_path(program_graph, projected_variable):
+def create_projected_variable_path(code, projected_variable):
+    program_graph = create_graph(code + "\n" + projected_variable)
     dep_map = {}
     control_map = {}
     r_control_map = {}
@@ -450,7 +451,7 @@ def create_projected_variable_path(program_graph, projected_variable):
     required = required.union(r)
 
     required = list(required)
-    return sorted(required)
+    return sorted(required)[:-1]
 
 
 def build_program(program_graph, projected_path):
@@ -500,7 +501,7 @@ def main():
 
     visualize(graph, output_directory + os.path.sep + 'out.gv')
 
-    relevant_nodes = create_projected_variable_path(graph, projected_variable)
+    relevant_nodes = create_projected_variable_path(code, projected_variable)
     output_code(graph, relevant_nodes, output_directory)
     print relevant_nodes
 
