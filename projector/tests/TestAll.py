@@ -385,7 +385,10 @@ x.a + y.a
 control_edges_24 = [Edge(x, y) for x, y in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)] ]
 dep_edges_24 = [Edge(x, y) for x, y in [(0, 1), (2, 3), (3, 4), (4, 5), (1, 5)]]
 
-parameters_24 = []
+parameters_24 = [
+    ("x", [0, 1, 5]),
+    ("y", [2, 3, 4, 5]),
+]
 
 tests = [
     (code_1, control_edges_1, dep_edges_1, parameters_1),
