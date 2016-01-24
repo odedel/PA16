@@ -483,8 +483,11 @@ def output_analysis_result(graph, output_directory):
 
 
 def output_code(graph, relevant_nodes, output_dir):
+    # else_nodes = []
     with file(output_dir + os.path.sep + 'projected_code.py', 'w') as f:
         for node_number in relevant_nodes:
+            if isinstance(graph.nodes[node_number-1], ControlNode) and graph.nodes[node_number-1].statement == 'else:':
+                f.write('\t'*graph.nodes[node_number-1].indent + graph.nodes[node_number-1].statement + '\n')
             f.write('\t'*graph.nodes[node_number].indent + graph.nodes[node_number].statement + '\n')
 
 
@@ -506,6 +509,7 @@ def main():
 
     relevant_nodes = create_projected_variable_path(graph, projected_variable)
     output_code(graph, relevant_nodes, output_directory)
+    print relevant_nodes
 
 
 if __name__ == '__main__':
