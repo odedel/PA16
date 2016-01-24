@@ -694,5 +694,5 @@ def test_var(code, control_edges, dep_edges, parameters):
     compare_lists(graph.control_edges, control_edges)
     compare_lists(graph.dep_edges, dep_edges)
     for val, deps in parameters:
-        projection = create_projected_variable_path(graph, val)
+        projection = create_projected_variable_path(code, val)
         compare_lists(projection, deps)
