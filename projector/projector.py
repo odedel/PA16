@@ -412,20 +412,11 @@ def create_projected_variable_path(program_graph, projected_variable):
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
         g = program_graph.nodes[pos]
-        if isinstance(g, StatementNode) and g.assigned_var.split("#")[0] == projected_variable:
+        if (isinstance(g, StatementNode) and g.assigned_var.split("#")[0] == projected_variable) or i == 0:
             r = set()
             r.add(pos)
             post_len = 0
             pre_len = 1
-
-            #add reverse dependencies
-            while pre_len != post_len:
-                pre_len = len(r)
-                for i in r:
-                    if i in r_dep_map:
-                        r = r.union(r_dep_map[i])
-                post_len = len(r)
-            required = required.union(r)
 
             #add dependencies
             r = set()
