@@ -291,7 +291,10 @@ class GraphBuilder(ast.NodeVisitor):
         return return_list
 
     def _create_condition_dependencies(self, node, code_line=None, control_node=None):
-        code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
+        if isinstance(node, ast.If):
+            code = astor.codegen.to_source(ast.If(test=node.test, body=[], orelse=[]))
+        else:   # While
+            code = astor.codegen.to_source(ast.While(test=node.test, body=[], orelse=[]))
         checked_vars = []
         for tested in [node.test.left, node.test.comparators[0]]:
             if isinstance(tested, ast.Name):
