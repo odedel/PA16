@@ -444,7 +444,7 @@ while t < x:
         t = counter + x
 t
 """)
-#     create_projected_variable_path(projected_code, "x")
+    create_projected_variable_path(projected_code, "y")
     OUT_FILE_PATH = r"T:\out.gv"
     # visualize(projected_code, OUT_FILE_PATH)
     # print 'The projected program:'
