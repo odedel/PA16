@@ -521,7 +521,6 @@ def main():
 
     relevant_nodes = create_projected_variable_path(code, projected_variable)
     output_code(graph, relevant_nodes, output_directory)
-    print relevant_nodes
 
 
 if __name__ == '__main__':
