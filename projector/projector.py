@@ -435,22 +435,22 @@ def create_projected_variable_path(code, projected_variable):
 
 
 def recurse_walk(control_map, dep_map, pos, r, r_control_map):
-        if pos in r_control_map:
-            prev = r_control_map[pos]
+    if pos in r_control_map:
+        prev = r_control_map[pos]
 
-            while prev is not 0:
-                l = prev
-                for prev in l:
-                    if len(control_map[prev]) == 2:
-                        low = control_map[prev][0]
-                        high = control_map[prev][1]
-                        if low <= pos and pos < high:
+        while prev is not 0:
+            l = prev
+            for prev in l:
+                if len(control_map[prev]) == 2:
+                    low = control_map[prev][0]
+                    high = control_map[prev][1]
+                    if low <= pos and pos < high:
                         r.add(prev)
                         #r = r.union(dep_map[prev])
                         r = get_dependencies(dep_map, prev, r)
-                    if prev not in r_control_map:
-                        break
-                    prev = r_control_map[prev]
+                if prev not in r_control_map:
+                    break
+                prev = r_control_map[prev]
     return r
 
 
