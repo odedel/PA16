@@ -401,15 +401,17 @@ def create_projected_variable_path(code, projected_variable):
         if edge.from_ not in control_map:
             control_map[edge.from_] = []
         control_map[edge.from_].append(edge.to)
+
+    for edge in program_graph.dep_edges:
+        if edge.from_ not in r_dep_map:
+            r_dep_map[edge.from_] = []
+        r_dep_map[edge.from_].append(edge.to)
+
     for edge in program_graph.control_edges:
         if edge.to > edge.from_:
             if edge.to not in r_control_map:
                 r_control_map[edge.to] = []
             r_control_map[edge.to].append(edge.from_)
-    for edge in program_graph.dep_edges:
-        if edge.from_ not in r_dep_map:
-            r_dep_map[edge.from_] = []
-        r_dep_map[edge.from_].append(edge.to)
 
     for i in xrange(len(program_graph.nodes)):
         pos = len(program_graph.nodes) - i - 1
@@ -427,9 +429,14 @@ def create_projected_variable_path(code, projected_variable):
             #add every branch on the way to the node
 
     r = set()
-    for pos in required:
-        r = r.union(recurse_walk(control_map, dep_map, pos, r, r_control_map))
-    required = required.union(r)
+    pre_len = 1
+    post_len = pre_len - 1
+    while pre_len != post_len:
+        pre_len  = len(required)
+        for pos in required:
+            r = r.union(recurse_walk(program_graph, control_map, dep_map, pos, r, r_control_map))
+        required = required.union(r)
+        post_len  = len(required)
 
     required = list(required)
     if changed:
@@ -438,19 +445,21 @@ def create_projected_variable_path(code, projected_variable):
         return sorted(required)
 
 
-def recurse_walk(control_map, dep_map, pos, r, r_control_map):
+def recurse_walk(program_graph, control_map, dep_map, pos, r, r_control_map):
     if pos in r_control_map:
         prev = r_control_map[pos]
 
         while prev is not 0:
             l = prev
             for prev in l:
-                if len(control_map[prev]) == 2:
+                if len(control_map[prev]) == 2:# or program_graph.nodes[prev].statement in ["else", "elif"]:
                     low = control_map[prev][0]
                     high = control_map[prev][1]
-                    if low <= pos and pos < high:
+                    if low < pos and pos < high or pos in [low, high]:
                         r.add(prev)
-                        #r = r.union(dep_map[prev])
+                        if pos in [low, high]:
+                            if isinstance(program_graph.nodes[pos - 1], ControlNode):
+                                r.add(pos-1)
                         r = get_dependencies(dep_map, prev, r)
                 if prev not in r_control_map:
                     break
