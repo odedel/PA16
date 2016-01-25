@@ -231,10 +231,6 @@ class GraphBuilder(ast.NodeVisitor):
                             influence_vars = influence_vars.union(self._find_attributes_of_the_same_object(other_var_with_attribute))
                             break
 
-        # if isinstance(node, ast.Expr):
-        #     if isinstance(node.value, ast.Attribute) or isinstance(node.value, ast.Name):
-        #         influence_vars = influence_vars.union(set(self._get_vars_that_points_to_the_same_object(assigned_var)))
-
         # If the target is attribute, the object declaration is also influence
         if '#' in target:
             name, attribute = target.split('#')
