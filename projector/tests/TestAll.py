@@ -137,9 +137,9 @@ t
 """
 
 parameters_6 = [
-    ("x", [0, 1, 3, 5, 6]),
+    ("x", [0, 1, 3, 4, 5, 6]),
     ("t", [0, 1, 3, 4, 5, 6]),
-    ("counter", [0, 1, 2, 3, 5, 6, 7]),
+    ("counter", [0, 1, 2, 3, 4, 5, 6, 7]),
 ]
 
 control_edges_6 = [Edge(x, y) for x, y in
@@ -182,9 +182,9 @@ t
 
 parameters_8 = [
     #fixme we need to identify that the while condition depends on an inner update
-    ("x", [0, 1, 3, 5, 6, 8, 9, 12, 14]),
-    ("t", [0]),
-    ("counter", [0]),
+    ("x",       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]),
+    ("t",       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ,12, 13, 14]),
+    ("counter", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]),
 ]
 
 control_edges_8 = [Edge(x, y) for x, y in
