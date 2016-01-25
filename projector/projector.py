@@ -386,7 +386,12 @@ def create_graph(original_code, indent_level=0):
 
 
 def create_projected_variable_path(code, projected_variable):
-    program_graph = create_graph(code + "\n" + projected_variable)
+    if code.split('\n')[-1] == projected_variable:
+        program_graph = create_graph(code)
+        changed = False
+    else:
+        program_graph = create_graph(code + "\n" + projected_variable)
+        changed = True
     dep_map = {}
     control_map = {}
     r_control_map = {}
@@ -431,7 +436,10 @@ def create_projected_variable_path(code, projected_variable):
     required = required.union(r)
 
     required = list(required)
-    return sorted(required)[:-1]
+    if changed:
+        return sorted(required)[:-1]
+    else:
+        return sorted(required)
 
 
 def recurse_walk(control_map, dep_map, pos, r, r_control_map):
