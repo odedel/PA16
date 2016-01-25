@@ -420,22 +420,21 @@ def create_projected_variable_path(code, projected_variable):
             pre_len = 1
 
             #add dependencies
-            r = set()
-            r.add(pos)
-            post_len = 0
-            pre_len = 1
-            while pre_len != post_len:
-                pre_len = len(r)
-                for i in r:
-                    if i in dep_map:
-                        r = r.union(dep_map[i])
-                post_len = len(r)
+            r = get_dependencies(dep_map, pos, r)
             required = required.union(r)
 
             #add every branch on the way to the node
 
     r = set()
     for pos in required:
+        r = r.union(recurse_walk(control_map, dep_map, pos, r, r_control_map))
+    required = required.union(r)
+
+    required = list(required)
+    return sorted(required)[:-1]
+
+
+def recurse_walk(control_map, dep_map, pos, r, r_control_map):
         if pos in r_control_map:
             prev = r_control_map[pos]
 
@@ -447,14 +446,26 @@ def create_projected_variable_path(code, projected_variable):
                         high = control_map[prev][1]
                         if low <= pos and pos < high:
                         r.add(prev)
-                        r = r.union(dep_map[prev])
+                        #r = r.union(dep_map[prev])
+                        r = get_dependencies(dep_map, prev, r)
                     if prev not in r_control_map:
                         break
                     prev = r_control_map[prev]
-    required = required.union(r)
+    return r
 
-    required = list(required)
-    return sorted(required)[:-1]
+
+def get_dependencies(dep_map, pos, r):
+    r = set()
+    r.add(pos)
+    post_len = 0
+    pre_len = 1
+    while pre_len != post_len:
+        pre_len = len(r)
+        for i in r:
+            if i in dep_map:
+                r = r.union(dep_map[i])
+        post_len = len(r)
+    return r
 
 
 def build_program(program_graph, projected_path):
